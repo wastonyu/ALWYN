@@ -316,10 +316,10 @@ IF TYPE("oMp") != "O"
 	oMp	= CREATEOBJECT("proan_mobile_pay_api")
 ENDIF
 *=sqlsetprop(0,"displogin",3)  &&do not display error warning
-WAIT WINDOW "正在連接到SQL SERVER服務器..." AT 20,80 NOWAIT NOCLEAR 
+WAIT WINDOW "正在連接到SQL SERVER服務器..."  NOWAIT NOCLEAR 
 *_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=rms6_source"  && 200 ----香港
 
-_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=RMS6"  && ----本機
+_string = "driver=sql server;server=192.168.3.26;uid=sa;pwd=sa;database=RMS6"  && ----本機
 
 
 nhand=SQLSTRINGCONNECT(_string)
@@ -348,13 +348,17 @@ ENDIF
 update_system_setting()
 
 load_system_setting()
+PUBLIC __finger
+
+__finger = .F.
 
 IF __Finger
 	PUBLIC oFinger
 	oFinger	= CREATEOBJECT("fingerprint")
 ENDIF
 
-_station=getcomputername()				&&取工作站電腦名稱
+_station=getcomputername()	
+SET STEP ON 			&&取工作站電腦名稱
 ssql="select filename,updated_station from system_file where filename='rms6' "
 IF SQLEXEC(nhand,ssql,"update_tmp")<0
 	_load_error = -1
