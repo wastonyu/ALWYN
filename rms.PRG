@@ -1,41 +1,48 @@
-PARAMETERS cexp
+PARAMETERS nMess_start_id,nMess_end_id
 SET TALK OFF
 *SET RESOURCE off
+IF PCOUNT() = 0 
+	lSetMess = .F.
+ELSE 
+	lSetMess = .T.	
+ENDIF 
 
-
+IF PCOUNT() = 1
+	nMess_end_id = 10000000
+ENDIF  
 
 
 PUBLIC rms_express, _data_updated, _db_name,rms_report,rms_atte ,rms6_update
 _data_updated = .F.
 _db_name = ""			&& update in connect_sql()
 
-IF !EMPTY(cexp)
+*!*	IF !EMPTY(cexp)
 
-	DO CASE
-
-
-		CASE  LOWER(cexp)="express"
-			rms_express=.T.
-
-		CASE  LOWER(cexp)="report"
-			rms_report=.T.
-
-			PUBLIC __inv_printer
-
-			__inv_printer=0
-
-		CASE  LOWER(cexp)="atte"
-			rms_atte	=.T.
-
-		CASE  LOWER(cexp)="update"		&& Run Auto_update.fxp  must
+*!*		DO CASE
 
 
-			rms6_update=.T.
+*!*			CASE  LOWER(cexp)="express"
+*!*				rms_express=.T.
 
-	ENDCASE
+*!*			CASE  LOWER(cexp)="report"
+*!*				rms_report=.T.
+
+*!*				PUBLIC __inv_printer
+
+*!*				__inv_printer=0
+
+*!*			CASE  LOWER(cexp)="atte"
+*!*				rms_atte	=.T.
+
+*!*			CASE  LOWER(cexp)="update"		&& Run Auto_update.fxp  must
 
 
-ENDIF
+*!*				rms6_update=.T.
+
+*!*		ENDCASE
+
+
+*!*	ENDIF
 
 
 _SCREEN.VISIBLE =.T.
@@ -289,7 +296,7 @@ DECLARE INTEGER ShellExecute IN shell32;
 	INTEGER nShowCmd
 *------------------------------------------------------------------
 
-PUBLIC nhand,_system_langue,_login_user_name,GL_training,ntotalpage,frm_wait,__order_langue,nemailhand 		&&GL_training 訓練模式
+PUBLIC nhand,nhand_hk,_system_langue,_login_user_name,GL_training,ntotalpage,frm_wait,__order_langue,nemailhand 		&&GL_training 訓練模式
 _system_langue="CN"
 __order_langue =_system_langue
 _login_user_name=""
@@ -316,13 +323,25 @@ IF TYPE("oMp") != "O"
 	oMp	= CREATEOBJECT("proan_mobile_pay_api")
 ENDIF
 *=sqlsetprop(0,"displogin",3)  &&do not display error warning
-WAIT WINDOW "正在連接到SQL SERVER服務器..."  NOWAIT NOCLEAR 
-*_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=rms6_source"  && 200 ----香港
+WAIT WINDOW "正在連接到SQL SERVER服務器..." AT 20,80 NOWAIT NOCLEAR 
+_string_hk = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=rms6_source"  && 200 ----香港
+*_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=RMS6_1913"  && ----本機
+_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=RMS6"  && ----本機
 
-_string = "driver=sql server;server=192.168.3.26;uid=sa;pwd=sa;database=RMS6"  && ----本機
-
+lcServer = STREXTRACT(_string,";",";",1)
+lcServer = STREXTRACT(lcServer,"=","")
+lcDB = STREXTRACT(_string,";","",4)
+lcDB = STREXTRACT(lcDB,"=","")
 
 nhand=SQLSTRINGCONNECT(_string)
+IF lSetmess 
+	nhand_hk = SQLSTRINGCONNECT(_string_hk)
+	IF nHand_hk < 0 
+		WAIT WINDOW "不能連接到SQL SERVER服務器" + lcServer + " / " + lcDB + "，Message未更新！"   NOCLEAR TIMEOUT 3
+	ELSE  
+		WAIT WINDOW "成功連接到SQL SERVER服務器" + lcServer + " / " + lcDB + "，將更新Message..."   NOCLEAR TIMEOUT 3
+	ENDIF 	
+ENDIF 	
 
 PUBLIC gl_login_from_login_form
 gl_login_from_login_form = .T.
@@ -333,8 +352,10 @@ IF nhand<0
 	=MESSAGEBOX("connected  error!",48,"")
 	RETURN
 ELSE 
-	WAIT WINDOW "成功連接到SQL SERVER服務器，正在載入系統參數..." AT 20,80 NOWAIT NOCLEAR 
+	WAIT WINDOW "成功連接到SQL SERVER服務器" + lcServer + " / " + lcDB + "，正在載入系統參數..."   NOCLEAR TIMEOUT 3
 ENDIF
+
+
 
 PUBLIC __program
 __program	= 'PROGRAM(PROGRAM(-1)-3) + " -> " + PROGRAM(PROGRAM(-1)-2) + " -> " + PROGRAM(PROGRAM(-1)-1) + " -> " + PROGRAM()'
@@ -348,17 +369,13 @@ ENDIF
 update_system_setting()
 
 load_system_setting()
-PUBLIC __finger
-
-__finger = .F.
 
 IF __Finger
 	PUBLIC oFinger
 	oFinger	= CREATEOBJECT("fingerprint")
 ENDIF
 
-_station=getcomputername()	
-SET STEP ON 			&&取工作站電腦名稱
+_station=getcomputername()				&&取工作站電腦名稱
 ssql="select filename,updated_station from system_file where filename='rms6' "
 IF SQLEXEC(nhand,ssql,"update_tmp")<0
 	_load_error = -1
@@ -399,4 +416,65 @@ SQLEXEC(nhand,"create table  dbo.updateno ( table_name char(30),max_updateno int
 Get_table_updateno()		&&初始化  table updateno
 PUBLIC frm_wait 
 frm_wait = CREATEOBJECT("form")
-WAIT WINDOW "系統環境加載成功！" AT 20,80  TIMEOUT 1
+WAIT WINDOW "系統環境加載成功！"  NOWAIT 
+
+IF lSetmess 
+	SELECT * FROM message_tmp WHERE BETWEEN(id,nMess_start_id,nMess_end_id) ORDER BY ID INTO CURSOR cr_message_tmp 
+	SELECT cr_message_tmp
+	SCAN
+		_m_code = ALLTRIM(cr_message_tmp.m_code)
+		_mess_cn = ALLTRIM(cr_message_tmp.message_cn)
+		_mess_en = ALLTRIM(cr_message_tmp.message_en)
+		=setmessages(_m_code,_mess_cn,_mess_en)
+	ENDSCAN 
+	USE IN cr_message_tmp 
+	WAIT WINDOW "Message成功更新到HK SERVER！"  NOWAIT 
+ENDIF 	
+
+
+
+
+FUNCTION setmessages
+
+LPARAMETERS cCode,cMess_cn,cMess_en
+
+If Vartype(cCode)<>"C"
+	Return ""
+ENDIF
+
+Local _code
+_code=Lower(cCode)
+
+IF !USED("message_tmp")
+	RETURN cCode
+ENDIF
+
+If __debug_mode
+	_m_code = _code
+	_mess_cn = cMess_cn
+	_mess_en = cMess_en
+
+	If !Empty(_m_code)
+		Local csql
+		TEXT TO csql noshow
+			DECLARE @max_id int,@updateno int
+			SELECT @max_id=ISNULL(MAX(id),0)+1,@updateno = ISNULL(MAX(updateno),0)+1 FROM message
+			
+			IF NOT exists(Select 1 from message where m_code = ?_m_code )
+				Insert into MESSAGE(id,m_code,message_cn,message_en,updateno) values (@max_id,?_m_code,?_mess_cn,?_mess_en,@updateno)
+		ENDTEXT
+
+		If SQLExec(nhand_hk,csql)<0
+			aerror(err)
+			_error_line=LINENO(1)
+			_error_code=ALLTRIM(STR(err(1)))
+			_error_msg=TRIM(err(2))
+			_error_prog=PROGRAM()
+			_ctitle=getmessage("_sqlserver_error")
+			error_catch(_ctitle,_error_code,_error_msg,_error_prog,_error_line)
+			Return _code
+		Endif
+	ENDIF 	
+ENDIF
+
+ENDFUNC 
