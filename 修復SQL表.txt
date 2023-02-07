@@ -1,4 +1,30 @@
-exec sp_dboption RMS6_MAC,'single user','true' 
-dbcc checktable('print_tmp','ALLOW_REPAIR_DATA_LOSS')
-dbcc checktable('print_tmp','ALLOW_REBUILD')
-exec sp_dboption RMS6_MAC,'single user','false' 
+CREATE PROCEDURE fixTable
+@Database VARCHAR(20),@Table VARCHAR(20)
+AS
+BEGIN
+	SET NOCOUNT ON
+	DECLARE @Ver CHAR(4)
+	DECLARE @cmd VARCHAR(200)
+
+	SELECT @Ver = Substring(@@Version,22,4)
+	If @Ver < '2012'
+		SELECT @cmd = 'Exec sp_dboption ' + @Database + ',''single user''' + ',''true'' '
+	Else 	
+		SELECT @cmd = 'ALTER DATABASE ' + @Database + ' SET SINGLE_USER WITH ROLLBACK IMMEDIATE ' 
+	EXEC(@cmd)
+
+	Select @cmd = 'DBCC CHECKTABLE(''' + @Database + '.dbo.' + @Table + ''',REPAIR_ALLOW_DATA_LOSS) '
+	EXEC(@cmd)
+
+	SELECT @cmd = 'DBCC CHECKTABLE(''' + @Database + + '.dbo.' + @Table + ''',REPAIR_REBUILD) '
+	EXEC(@cmd)
+
+	If @Ver < '2012'
+		SELECT @cmd = 'Exec sp_dboption ' + @Database + ',''single user''' + ',''false'' '
+	Else 
+		SELECT @cmd = 'ALTER DATABASE ' + @Database + ' SET MULTI_USER WITH ROLLBACK IMMEDIATE '
+	
+	EXEC(@cmd)
+END
+
+Exec fixTable '數據庫名','表名'

@@ -1,0 +1,84 @@
+--插入客戶管理菜單
+Declare @Updateno int,@dispord int,@ID int,@Parent_id int
+If Exists(Select 1 from role_access where DescCN = '客戶管理' )
+	Select @ID = ID,@Dispord = Dispord ,@Updateno = Updateno 
+		from role_access 
+		where DescCN = '客戶管理'
+Else 
+	Begin 
+		Select @Updateno = Max(Updateno) + 1,
+		@ID = max(ID) + 1,
+		@dispord = Max(Dispord) + 1
+		from role_access 
+		
+		Insert role_access (ID,Parent_id,DescCN,DescEN,Pcode,Visible,Authorize_require, 
+		acode,Dispord,Updateno)
+		Values(@ID,1,'客戶管理','Customer Management','',1,0,'',@dispord,@Updateno)
+	End 
+
+Select @Parent_id = @ID
+Select @ID = @ID + 1, @Updateno = @Updateno + 1 ,@Dispord = @Dispord + 1
+If not Exists(Select 1 from role_access where pcode = 'telcall') 
+	Insert role_access (ID,Parent_id,DescCN,DescEN,Pcode,Visible,Authorize_require, 
+	acode,Dispord,Updateno)
+	Values(@ID ,@Parent_ID,'電話記錄','Call Record','telcall',1,0,'SAED',@dispord,@Updateno)
+
+Select @ID = @ID + 1, @Updateno = @Updateno + 1 ,@Dispord = @Dispord + 1
+
+If not Exists(Select 1 from role_access where pcode = 'schcust')
+	Insert role_access (ID,Parent_id,DescCN,DescEN,Pcode,Visible,Authorize_require, 
+	acode,Dispord,Updateno)
+	Values(@ID ,@Parent_ID,'尋找資料','Search Cust','schcust',1,0,'SAED',@dispord ,@Updateno)
+
+Select @ID = @ID + 1, @Updateno = @Updateno + 1 ,@Dispord = @Dispord + 1
+
+If not Exists(Select 1 from role_access where pcode = 'schedul')
+	Insert role_access (ID,Parent_id,DescCN,DescEN,Pcode,Visible,Authorize_require, 
+	acode,Dispord,Updateno)
+	Values(@ID ,@Parent_ID,'行程安排','Schedule','schedul',1,0,'SAED',@dispord,@Updateno)
+
+Select @ID = @ID + 1, @Updateno = @Updateno + 1 ,@Dispord = @Dispord + 1
+
+If not Exists(Select 1 from role_access where pcode = 'custinfo')
+	Insert role_access (ID,Parent_id,DescCN,DescEN,Pcode,Visible,Authorize_require, 
+	acode,Dispord,Updateno)
+	Values(@ID ,@Parent_ID,'客戶資料','Cust Info','custinfo',1,0,'SAED',@dispord,@Updateno )
+
+
+************************************************************************************************************
+Declare @Updateno int,@dispord int,@ID int,@Parent_id int
+If Exists(Select 1 from syslookup where DescCN = '客戶管理' and type = 'menutree' )
+	Select @ID = ID,@Dispord = Dispord ,@Updateno = Updateno 
+		from syslookup 
+		where DescCN = '客戶管理' and type = 'menutree'
+Else 
+	Begin 
+		Select @Updateno = Max(Updateno) + 1,
+		@ID = max(ID) + 1,
+		@dispord = Max(Dispord) + 1
+		from syslookup
+	
+		Insert syslookup (ID,type,DescCN,DescEN,Active,isPurchase,Parent_id,Dispord,ImageFile ,Updateno) 
+		Values(@ID,'menutree','客戶管理','Customer Management',1, 1,-1,@dispord,'ICO\BG_BLANK.JPG',@Updateno)
+	End 
+Select @Parent_id = @ID 
+
+Select @ID = @ID +1,@Dispord = @Dispord + 1, @Updateno = @Updateno + 1
+If not exists(Select 1 from syslookup where pcode = 'telcall')
+	Insert syslookup (ID,type,DescCN,DescEN,Active,isPurchase,Parent_id,Dispord,ImageFile ,Updateno,cmd,cmd_type,pCode ) 
+		Values(@ID,'menutree','電話記錄','Call Record',1, 1,@Parent_id,@dispord,'ICO\BG_BLANK.JPG',@Updateno,'do form form\fcall','form','telcall')
+
+Select @ID = @ID +1,@Dispord = @Dispord + 1, @Updateno = @Updateno + 1
+If not exists(Select 1 from syslookup where pcode = 'schcust')
+	Insert syslookup (ID,type,DescCN,DescEN,Active,isPurchase,Parent_id,Dispord,ImageFile ,Updateno,cmd,cmd_type,pCode ) 
+		Values(@ID,'menutree','尋找資料','Search Cust',1, 1,@Parent_id,@dispord,'ICO\BG_BLANK.JPG',@Updateno,'do form form\fschcust','form','schcust')
+
+Select @ID = @ID +1,@Dispord = @Dispord + 1, @Updateno = @Updateno + 1
+If not exists(Select 1 from syslookup where pcode = 'schedul')
+	Insert syslookup (ID,type,DescCN,DescEN,Active,isPurchase,Parent_id,Dispord,ImageFile ,Updateno,cmd,cmd_type,pCode ) 
+		Values(@ID,'menutree','行程安排','Schedule',1, 1,@Parent_id,@dispord,'ICO\BG_BLANK.JPG',@Updateno,'do form form\fschedul','form','schedul')
+
+Select @ID = @ID +1,@Dispord = @Dispord + 1, @Updateno = @Updateno + 1
+If not exists(Select 1 from syslookup where pcode = 'custinfo')
+	Insert syslookup (ID,type,DescCN,DescEN,Active,isPurchase,Parent_id,Dispord,ImageFile ,Updateno,cmd,cmd_type,pCode ) 
+		Values(@ID,'menutree','客戶資料','Cust Info',1, 1,@Parent_id,@dispord,'ICO\BG_BLANK.JPG',@Updateno,'do form form\fmain','form','custinfo')

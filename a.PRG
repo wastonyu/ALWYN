@@ -37,8 +37,8 @@ _screen.lockscreen=.f.
 
 *_path=SYS(5)+SYS(2003)+"\"
 *set default to "&_path"  &&
-SET DEFAULT TO d:\work\pos6\pos6
-SET PATH TO TO d:\work\pos6\pos6\class ADDITIVE 
+SET DEFAULT TO d:\work\pos6
+SET PATH TO TO d:\work\class ADDITIVE 
 
 
 SET PROCEDURE TO pub_proc
@@ -94,11 +94,11 @@ __access_user_name=""
 *=sqlsetprop(0,"displogin",3)  &&do not display error warning
 
 
-*_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=pos6_source"  && 200 ----香港
+_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=pos6_source"  && 200 ----香港
 *_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=pos6_ciao_test"  && 200 ciao
 
-_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=pos6_ms"  && ----本機
-
+*_string = "driver=sql server;server=192.168.3.26;uid=sa;pwd=sa;database=pos6_SOURCE"  && ----本機
+_info_string =  "driver=sql server;server=192.168.3.26;uid=sa;pwd=sa;database=proan"  && ----本機custinfo
 
 *_string = "driver=sql server;server=127.0.0.1,2468;uid=sa;pwd=proanpossapwd;database=pos6"  && 
 
@@ -113,6 +113,8 @@ _string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=pos6_m
 
 nhand=SQLSTRINGCONNECT(_string)
 
+PUBLIC nInfohand
+nInfohand = SQLSTRINGCONNECT(_info_string)
 PUBLIC gl_login_from_login_form
 gl_login_from_login_form = .t.
 
