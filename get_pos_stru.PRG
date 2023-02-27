@@ -1,4 +1,22 @@
 LPARAMETERS tcFile,sdate,edate
+IF PCOUNT() = 0
+	RETURN 
+ENDIF 
+IF PCOUNT() = 1
+	sdate = GOMONTH(DATE(),-MONTH(DATE()) + 1 ) - DAY(DATE()) + 1
+	edate = DATE()
+ENDIF 
+IF PCOUNT() = 2
+	edate = DATE()
+ENDIF 	
+
+IF VARTYPE(sdate) = "C" 
+	sdate = CTOD(sdate)
+ENDIF 
+
+IF VARTYPE(edate) = "C" 
+	edate = CTOD(edate)
+ENDIF 
 
 &&臨時視圖名稱
 LOCAL lcview_random, lcview_inv, lcview_inv_disc, lcview_invitem, lcview_invitem_disc, lcview_invmm 
@@ -21,6 +39,7 @@ IF SQLEXEC(nhand, "exec create_inv_view_all_shop ?lcview_random,?dnewsDate,?edat
 	RETURN .F.
 ENDIF
 
+&&查詢條件
 
 &&顯示成本
 gl_tmpcost = .t.
@@ -28,6 +47,13 @@ gl_tmpcost = .t.
 xshop ="all"
 &&所有營業員
 xsalesman = "all"
+
+&&會員種類：all
+&&工作站：all
+&&發票種類:all
+&&付款方式:all
+&&訂金發票：all
+
 
 &&日期
 cond = " where inv.belongdate between ?sdate and ?edate "
@@ -48,8 +74,6 @@ IF VARTYPE(__new_deposit) <> "U" AND __new_deposit
 ENDIF 
 
 lcPayway_cond = ""
-
-
 
 
 TEXT TO cmd NOSHOW TEXTMERGE &&##tmp1
@@ -80,9 +104,6 @@ cond = ""
 
 =SQLEXEC(nhand, "select top 1 * from coupon_master", "cr_nouse")
 
-* 2013-07-31
-* 如有用 coupon 個 len 800 export to excel 時會出唔個 column
-* 所以有 coupon 先 800 無就 250
 
 IF EOF("cr_nouse")
 	TEXT TO _coupon NOSHOW 
@@ -107,7 +128,6 @@ ENDIF
 
 _return_reason =  " return_item_reason = ISNULL( (select name from lookup where id = c.return_item_reason_id),  ''),  "
 
-lcCond_chungshun = ""
 
 Item_cond1 = ""
 
@@ -209,16 +229,7 @@ TEXT TO cmd NOSHOW TEXTMERGE &&##tmp2 from ##tmp1
 		left join <<lcview_inv>> as inv on a.inv_id = inv.id
 		left join item (nolock) on a.item_id = item.id
 		left join shop (nolock) on inv.shop_id = shop.id
-
-/*
--- chris 2021-03-29 ciao report server : error could not continue scan with nolock due to data movement
--- 先將 cust 改為 readpast, 其他 table 再留意下先
-*/
-
-
---		left join cust (nolock) on inv.cust_id = cust.id
 		left join cust (readpast) on inv.cust_id = cust.id
-
 		left join invitem_rem c (nolock) on a.id = c.invitem_id
 		left join inv_rem d (nolock) on inv.id = d.inv_id
 		left join station (nolock) on inv.station_id = station.id
@@ -229,10 +240,7 @@ TEXT TO cmd NOSHOW TEXTMERGE &&##tmp2 from ##tmp1
 		left join shop f (nolock) on d.tran_shop_id = f.id
 		left join invoice_disc (nolock) on e.item_discount_reason_id = invoice_disc.id and (a.input_code = 'INVOICE_DISC' or a.input_code <> 'INVOICE_DISC_AUTO_REDEEM')
 		left join lookup disc_lookup (nolock) on e.item_discount_reason_id = disc_lookup.id and a.input_code <> 'INVOICE_DISC' and a.input_code <> 'INVOICE_DISC_AUTO_REDEEM'
-		where a.inv_id in (select inv_id from <<_file1>> ) <<lcCond_chungshun>> <<cond>> 
-
-		---<<lcPayway_cond>>
-
+		where a.inv_id in (select inv_id from <<_file1>> ) <<cond>> 
 ENDTEXT
 
  && <<item_cond1>>
@@ -283,10 +291,6 @@ ENDIF
 SELECT * FROM cr_inv INTO CURSOR cr_inv READWRITE 
 REPLACE ALL vip_redeem_amt WITH 0
 
-* chris 2021-08-13
-* sql 不用 FORMAT 向下兼容 sql 2008
-*		convert(varchar(20), FORMAT(isnull(d.rem_date3, '1900-01-01 00:00'), 'yyyy-MM-dd')) as deposit_date,
-*		convert(varchar(20), FORMAT(isnull(d.rem_date3, '1900-01-01 00:00'), '\HH:mm')) as deposit_time,
 
 REPLACE ALL deposit_date WITH ALLTRIM(SUBSTR(TTOC(rem_date3),1,10)) 	FOR rem_date3 > {^2000-1-1}
 REPLACE ALL deposit_time WITH ALLTRIM(SUBSTR(TTOC(rem_date3),11,10)) 	FOR rem_date3 > {^2000-1-1}
@@ -539,6 +543,9 @@ SELECT * FROM cr_disc INTO CURSOR cr_disc READWRITE
 
 SELECT "cr_disc"
 INDEX on inv_id TAG id
+
+
+lcDisc_order = getmessage("_disc_order")
 
 SELECT inv_id FROM cr_inv GROUP BY inv_id INTO CURSOR cr_tmp_invid
 SELECT cr_tmp_invid
