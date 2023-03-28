@@ -1,16 +1,6 @@
-PARAMETERS nMess_start_id,nMess_end_id
 SET TALK OFF
 *SET RESOURCE off
-IF PCOUNT() = 0 
-	lSetMess = .F.
-ELSE 
-	lSetMess = .T.	
-ENDIF 
-
-IF PCOUNT() = 1
-	nMess_end_id = 10000000
-ENDIF  
-
+lSetMess = .T.	
 
 PUBLIC rms_express, _data_updated, _db_name,rms_report,rms_atte ,rms6_update
 _data_updated = .F.
@@ -326,7 +316,8 @@ ENDIF
 WAIT WINDOW "正在連接到SQL SERVER服務器..." AT 20,80 NOWAIT NOCLEAR 
 _string_hk = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=rms6_source"  && 200 ----香港
 *_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=RMS6_1913"  && ----本機
-_string = "driver=sql server;server=192.168.10.203;uid=sa;pwd=sa;database=RMS6"  && ----本機
+*_string = "driver=sql server;server=pds.poshk.com,7200;uid=sa;pwd=proanpossapwd;database=rms6"  && 200 ----香港
+_string = "driver=sql server;server=192.168.10.66;uid=sa;pwd=sa;database=RMS6"  && ----本機
 
 lcServer = STREXTRACT(_string,";",";",1)
 lcServer = STREXTRACT(lcServer,"=","")
@@ -370,11 +361,10 @@ update_system_setting()
 
 load_system_setting()
 
-IF __Finger
-	PUBLIC oFinger
-	oFinger	= CREATEOBJECT("fingerprint")
-ENDIF
-
+*!*	IF __Finger
+*!*		PUBLIC oFinger
+*!*		oFinger	= CREATEOBJECT("fingerprint")
+*!*	ENDIF
 _station=getcomputername()				&&取工作站電腦名稱
 ssql="select filename,updated_station from system_file where filename='rms6' "
 IF SQLEXEC(nhand,ssql,"update_tmp")<0
@@ -388,29 +378,41 @@ ssql="select *  from station where computer=?_station"
 IF SQLEXEC(nhand,ssql,"update_tmp1")<0
 	_load_error = -1
 	_permit=.F.
-	EXIT
+	RETURN 
 ENDIF
 
+&&沒有工作站就添加一個
 IF EOF("update_tmp1")
-
-	_load_error = -1
-	_permit=.F.
-	EXIT
-
-ELSE
-	_id=update_tmp1.ID
-
-	__ismain_server=update_tmp1.mainserver		&&是否主服務器
-	__station_id=update_tmp1.ID			&&當前工作站的ID
-
-	IF EMPTY(_id)	&&不存在的station ID
-
+	TEXT TO ssql NOSHOW TEXTMERGE 
+		Declare @ID int,@Table_page int
+		Select @ID = max(id) + 1,@Table_page = max(table_page) from station 
+		IF NOT EXISTS(SELECT 1 FROM STATION WHERE COMPUTER = ?_station)
+			Insert  into station (active,id,desccn,descen,computer,table_page,autobackup,attendance,Language,cashier,drawer,comdrawer,comdrawerport,
+		poledisplay,polemessage,linkserver,pserver_active,clear_item_db,update_item_db,mainserver,clear_cache,android_key,self_order_table_id,
+		lock_pay_cashier_id,shop_id)
+		Values (1,@id,?_station,?_station,?_station,@Table_page,0,0,'CN',0,0,0,1,
+		0,'WELCOME',0,getdate(),1,1,0,1,'',0,
+		-1,0)
+		Select * from station where computer=?_station
+	ENDTEXT 
+	IF SQLEXEC(nhand,ssql,"update_tmp1")<0
 		_load_error = -1
 		_permit=.F.
-		EXIT
+		RETURN 
+	ENDIF 	
+ENDIF 	
 
-	ENDIF
-ENDIF 
+_id=update_tmp1.ID
+__ismain_server=update_tmp1.mainserver		&&是否主服務器
+__station_id=update_tmp1.ID			&&當前工作站的ID
+
+IF EMPTY(_id)	&&不存在的station ID
+		_load_error = -1
+	_permit=.F.
+	RETURN 
+ENDIF
+
+
 public_define()
 SQLEXEC(nhand,"create table  dbo.updateno ( table_name char(30),max_updateno int )")		&&創建表updateno
 Get_table_updateno()		&&初始化  table updateno
@@ -419,13 +421,17 @@ frm_wait = CREATEOBJECT("form")
 WAIT WINDOW "系統環境加載成功！"  NOWAIT 
 
 IF lSetmess 
-	SELECT * FROM message_tmp WHERE BETWEEN(id,nMess_start_id,nMess_end_id) ORDER BY ID INTO CURSOR cr_message_tmp 
+	SELECT * FROM message_tmp WHERE NVL(Updated, .F.) = .F. ORDER BY ID INTO CURSOR cr_message_tmp 
 	SELECT cr_message_tmp
+	lnRec_Total = TRANSFORM(RECCOUNT())
 	SCAN
 		_m_code = ALLTRIM(cr_message_tmp.m_code)
 		_mess_cn = ALLTRIM(cr_message_tmp.message_cn)
 		_mess_en = ALLTRIM(cr_message_tmp.message_en)
+		WAIT WINDOW "正在更新Message,進度:" + TRANSFORM(RECNO()) + "/" + lnRec_Total AT 6,100 NOWAIT 
 		=setmessages(_m_code,_mess_cn,_mess_en)
+		UPDATE message_tmp SET updated = .T. WHERE ALLTRIM(m_code) = _m_code
+		=SQLEXEC(nHand, "Update message set updated = 1 where m_code = ?_m_code")
 	ENDSCAN 
 	USE IN cr_message_tmp 
 	WAIT WINDOW "Message成功更新到HK SERVER！"  NOWAIT 
@@ -453,17 +459,17 @@ If __debug_mode
 	_m_code = _code
 	_mess_cn = cMess_cn
 	_mess_en = cMess_en
-
+		
 	If !Empty(_m_code)
 		Local csql
-		TEXT TO csql noshow
+		TEXT TO csql NOSHOW TEXTMERGE 
 			DECLARE @max_id int,@updateno int
 			SELECT @max_id=ISNULL(MAX(id),0)+1,@updateno = ISNULL(MAX(updateno),0)+1 FROM message
 			
 			IF NOT exists(Select 1 from message where m_code = ?_m_code )
 				Insert into MESSAGE(id,m_code,message_cn,message_en,updateno) values (@max_id,?_m_code,?_mess_cn,?_mess_en,@updateno)
 		ENDTEXT
-
+		WAIT WINDOW "正在處理" + _m_code + "...."  NOWAIT 
 		If SQLExec(nhand_hk,csql)<0
 			aerror(err)
 			_error_line=LINENO(1)
