@@ -2590,7 +2590,7 @@ _isfastfood=(_outlet_id=0 Or _run_mode="fastfood") &&(_fastfood and _run_mode="f
 If _inv_no>0 And (Vartype(_order_change_and_resave_inv)="U"  Or Vartype(_inv_chnage_mode)#"U")
 
 	&&Lihong 2020.01.17 _cloud_check_valid Split
-	ssql = "select Split,begintime,tableno,askno,endtime,paidtime,invamt,belongdate,cln,clntime,TEL,outlet_Id,fastfood,seller,sn,cloud_check_valid,void,deposit_id from inv  where id=?_inv_no"
+	ssql = "select Split,begintime,tableno,askno,endtime,paidtime,invamt,belongdate,cln,clntime,TEL,outlet_Id,fastfood,seller,sn,cloud_check_valid,void,deposit_id,order_uid from inv  where id=?_inv_no"
 
 	If SQLExec(nhand, ssql ,"cun_tmp")<0
 		Aerror(err)
@@ -2629,6 +2629,8 @@ If _inv_no>0 And (Vartype(_order_change_and_resave_inv)="U"  Or Vartype(_inv_chn
 
 		&&Lihong 2022.11.18 ­qª÷
 		*_deposit_id = NVL(cun_tmp.deposit_id,0)
+		
+		_order_uid = cun_tmp.order_uid 
 		
 		If !Empty(_askno)
 
@@ -2678,7 +2680,6 @@ If SQLExec(nhand,ssql,"cun_tmp2")<0
 	Return -1
 
 ENDIF
-
 *!*	xxx=memberno
 *!*	xx2=member_id
 *!*	xx3=memberID
@@ -2697,6 +2698,9 @@ If Eof("cun_tmp2")
 	Return -1
 Endif
 
+IF Vartype(_inv_chnage_mode)="U" OR VARTYPE(_order_uid)="U"
+	_order_uid = cun_tmp2.order_uid
+ENDIF 
 
 IF Vartype(_inv_chnage_mode)="U" OR _inv_no=0
 
@@ -3381,13 +3385,13 @@ IF VARTYPE(_inv_only_preview)="U"
 					INSERT INTO inv  (id,tableno,askno,pplcnt,begintime,orgamt,amount,modiamt,itemdiscamt,srvamt,taxamt,rndamt,discamt,invamt,
 					tips,paidamt,cashed,autocash,memberno,cln,clntime,void,voidreason,voidtime,paidtime,voiduser,xid,fastfood,adduser,station_id,outlet_id,
 					tel,endtime,link_table,void_id,updateno,remark,belongdate,points,points_used,points_remain,fastfood_info_id,split,isForeign,inv_type ,inv_remark,inv_remark2,seller,liked,sn,is_edit,queue_type,check_valid,is_web_inv, cloud_check_valid,
-					inv_prt_time, inv_prt_station_id, inv_prt_login_user_id, inv_prt_cashier_user_id <<lcpay_cashier_ins>>, deposit_id, inv_srv_type, inv_srv_perc )
+					inv_prt_time, inv_prt_station_id, inv_prt_login_user_id, inv_prt_cashier_user_id <<lcpay_cashier_ins>>, deposit_id, inv_srv_type, inv_srv_perc, order_uid )
 					values (?_id,?_table_no,?_askno,?_pplcnt,?_begtime,
 					<<cun_Tmp2.orgamt>>,<<cun_Tmp2.amount>>,<<cun_Tmp2.modiamt>>,<<cun_Tmp2.itemdiscamt>>,<<cun_Tmp2.srvamt>>,<<cun_Tmp2.taxamt>>,<<cun_Tmp2.rndamt>>,<<cun_Tmp2.discamt>>,<<_inv_amt>>,
 					0,0,0,0,?_member_id,?_clnID,?_clnTime,?_void,'','',?_paidtime,'',1,?_isfastfood,?_login_user_name,?_station_id,?_outlet_id,
 					?_tel,?_end_time,?_link_table,?_void_id,?_updateno,?_mem_remark,?_belongdate,?_inv_points,?_inv_points_used,?_points_remain,?_info_id,?nSplitNo,?_isForeign,?_inv_type,?_inv_remark,
 					?_inv_remark2 ,?_seller,?_liked,?_auto_sn,?_is_edit,?_queue_type,?_check_valid,?_is_web_inv, ?_cloud_check_valid,
-					?_inv_prt_time, ?_inv_prt_station_id, ?_inv_prt_login_user_id, ?_inv_prt_cashier_user_id <<lcpay_cashier_values>>, ?cun_Tmp2.deposit_id, ?cun_Tmp2.inv_srv_type, ?cun_Tmp2.inv_srv_perc )
+					?_inv_prt_time, ?_inv_prt_station_id, ?_inv_prt_login_user_id, ?_inv_prt_cashier_user_id <<lcpay_cashier_values>>, ?cun_Tmp2.deposit_id, ?cun_Tmp2.inv_srv_type, ?cun_Tmp2.inv_srv_perc, ?_order_uid )
 
 				ENDTEXT
 
@@ -3437,11 +3441,11 @@ IF VARTYPE(_inv_only_preview)="U"
 				insert into inv_detail (id,uid,parent_id,item_id,item_code,cate_id,descdisp,
 				qty,price,orgamt,amount,real_amount,round_amount,modi_amount,disc_amount,srv_per,srv_amount,tax_per,tax_amount,
 				xdisc,sitem,sitem_sub,mitem,printed,printtime,adduser,level_id,recused,xid,level_disc,handwriting,material,onlysave,tax2,pointed,points,askdept,gift,giftred,transnumber,tel ,source, 
-				cloud_coupon_id, web_coupon_id, web_coupon_code, print_single, orgqty_case_mat, same_tableno, price_type, qty_entity, add_user_id, add_user_station_id,srv_per_org ) 			
+				cloud_coupon_id, web_coupon_id, web_coupon_code, print_single, orgqty_case_mat, same_tableno, price_type, qty_entity, add_user_id, add_user_station_id,srv_per_org,kit_disp_uid,to_printer ) 			
 			SELECT ?_id,uid,parent_id,item_id,item_code,cate_id,descdisp,
 				qty,price,orgamt,amount,real_amount,round_amount,modi_amount,disc_amount,srv_per,srv_amount,tax_per,tax_amount,
 				xdisc,sitem,sitem_sub,mitem,printed,printtime,adduser,level_id,recused,xid,level_disc,handwriting,material,onlysave,tax2,pointed,points,askdept,gift,giftred,transnumber,tel ,source, 
-				cloud_coupon_id, web_coupon_id, web_coupon_code, print_single, orgqty_case_mat, same_tableno, price_type, qty_entity, add_user_id, add_user_station_id,srv_per_org 
+				cloud_coupon_id, web_coupon_id, web_coupon_code, print_single, orgqty_case_mat, same_tableno, price_type, qty_entity, add_user_id, add_user_station_id,srv_per_org,kit_disp_uid,to_printer  
 				from  order_detail where id=?Norder_ID and (item_id>0 or item_id= -3 or item_id= -199 or item_id= -111 or item_id= -110 or item_id between -104 and -101 or item_id= -51 ) <<lcvs_so_add_order_split_filter>>
 			
 			ENDTEXT
@@ -5868,7 +5872,7 @@ Scan
 		_disc_level=Trim(tmp_s(1))
 	Else
 
-		_disc_level=Iif(cun_tmp4.disc_id= -1,"all", "")
+		_disc_level=Iif(cun_tmp4.disc_id= -99,"all", "") &&Lihong 2023-08-10 ¥ý¹F·|­û§é¦© disc_id= -1 -> -99
 	Endif
 
 	Insert Into order_disc_tmp (uid,disc_id,disc_type,descdisp,disc_per,disc_amount,member_id,adduser,disc_level,disc_reason,disc_remark,disc_qty,autodisc,points,member_number,member_name,minamt,dedu_srv,after_inv) Values ;
@@ -6610,7 +6614,7 @@ Scan FOR item_id>0 	And slip_Print And Undefine=.F. Or (item_id=-3 And amount>0)
 	Endif
 
 	If Vartype(__slip_print_patch)#"U"
-		If slip_itm_tmp.onlysave And __slip_print_patch 								&&¸É³æ
+		If slip_itm_tmp.onlysave And __slip_print_patch AND NVL(slip_itm_tmp.hold,0)<=0 AND NVL(slip_itm_tmp.has_hold,.F.)	=.F. AND !LOWER(__special_customer)=="ms"						&&¸É³æ &&Lihong 2023.07.20 AND !slip_itm_tmp.hold>0
 			_item="<"+getmessage("_supp_order")+" >" 
 			
 			&&Lihong 2022.04.28 MS¼È¤£¥´¦L¡§¸É³æ¡¨¦r¼Ë
@@ -6740,7 +6744,6 @@ Else
 	Endif
 
 Endif
-
 
 __kitchen_order=_pre_setting &&ÁÙ­ì
 
@@ -8725,14 +8728,23 @@ ENDIF
 
 
 &&Lihong 2022.05.10
-IF LOWER(__special_customer)=="ms" &&Lihong 2022.05.10
+*Lihong 2023.08.03 IF LOWER(__special_customer)=="ms" 
 	SELECT cun_tmp
 	REPLACE ALL adduser WITH pay_cashier_user FOR !ISNULL(pay_cashier_user_id)
 	GO TOP 
 	SELECT cun_tmp11
 	REPLACE ALL adduser WITH pay_cashier_user FOR !ISNULL(pay_cashier_user_id)
 	GO TOP 
-ENDIF 
+	&&Lihong 2023.08.03
+	SELECT cun_tmp13
+	REPLACE ALL adduser WITH pay_cashier_user FOR !ISNULL(pay_cashier_user_id)
+	GO TOP 
+	IF VARTYPE(__deposit_once)#"U" and __deposit_once AND USED("cun_tmp23") AND !Eof("cun_tmp23")
+		SELECT cun_tmp23
+		REPLACE ALL adduser WITH pay_cashier_user FOR !ISNULL(pay_cashier_user_id)
+		GO TOP 
+	ENDIF 
+*ENDIF 
 
 &&Lihong 2021.12.15 ·|­û®ø¶O°O¿ý cun_tmp22->23  
 IF _Memb_Record
@@ -13325,8 +13337,9 @@ ENDIF
 
 
 
-Local _order_id
+Local _order_id, _order_uid 
 _order_id = 0
+_order_uid = null &&Lihong 2023.07.19 void item show
 
 _barcode=(_run_mode="barcode")		&&¬O§_±ø½X¼Ò¦¡
 
@@ -13422,8 +13435,9 @@ ENDIF
 
 
 
-&&Lihong 2020.01.17  
-If SQLExec(nhand, "select split from order_main where id=?_curorder", "cun_tmp")<0
+&&Lihong 2020.01.17  &&Lihong 2023.07.19 void item show
+If SQLExec(nhand, "if exists (select split from order_main where id<>0 and id=?_curorder) select split,order_uid,newid() as order_uid_new from order_main where id<>0 and id=?_curorder else " + ;
+"if exists (select split from tables where order_id<>0 and order_id=?_curorder) select split,order_uid,newid() as order_uid_new from tables where order_id<>0 and order_id=?_curorder else select CAST(0 as int) as split,newid() as order_uid", "cun_tmp")<0
 	Aerror(err)
 	Sqlrollback(nhand)
 	SQLSetprop(nhand,"Transactions",1)
@@ -13431,6 +13445,12 @@ If SQLExec(nhand, "select split from order_main where id=?_curorder", "cun_tmp")
 	Return -1
 Endif
 nSplitNo=NVL(cun_tmp.split,0)
+_order_uid = IIF(!ISNULL(cun_tmp.order_uid), cun_tmp.order_uid, cun_tmp.order_uid_new)
+&&Lihong 2023.07.19 void item show
+IF _run_mode="fastfood" AND VARTYPE(_curorder_uid)#"U" 
+	*_order_uid = IIF(VARTYPE(_curorder_uid)="C", _curorder_uid, null) 
+	_order_uid = _curorder_uid
+ENDIF 
 &&
 
 
@@ -13574,11 +13594,12 @@ _used_station=Iif(_run_mode="barcode" or VARTYPE(llfastfood_order_do_hold)#"U" o
 _isForeign=Iif(Vartype(__order_Foreigner)="L" ,__order_Foreigner,.F.)
 
 
-&&Lihong 2022.05.15
+&&Lihong 2022.05.15 &&Lihong 2023.07.19 void item show <<IIF(	_curorder>0	 AND VARTYPE(llfastfood_order_do_hold)="U" AND VARTYPE(llfastfood_order_do_pre)="U" OR BETWEEN(_curorder, -199999, -100000), "?_order_uid","newid()")>>
 TEXT TO ssql  NOSHOW TEXTMERGE
 
 	INSERT INTO order_main
-	           ([id]
+	           ([order_uid]
+	           ,[id]
 	           ,[inv_id]
 	           ,[tableno]
 	           ,[askno]
@@ -13615,7 +13636,7 @@ TEXT TO ssql  NOSHOW TEXTMERGE
 	           ,[inv_srv_perc]
 	)
 	     VALUES
-				  (
+				  (?_order_uid,
 				?_order_id ,
 				?_old_inv_Id ,
 				?_tableno,
@@ -13657,7 +13678,7 @@ ENDTEXT
 **TRIM(_addr)
 
 IF VARTYPE(_work_order_fastfood_slip_print)="U" &&Lihong 2022.09.13 ÂIµæ¯È
-ELSE &&Lihong 2022.09.13 ÂIµæ¯È
+ELSE &&Lihong 2022.09.13 ÂIµæ¯È &&Lihong 2023.07.19 void item show
 	IF VARTYPE(llfastfood_order_do_hold)="U" &&Lihong 2022-09-16 fastfood hold
 		If SQLExec(nhand,"select * from order_main with (nolock) where 1<>1","fastfood_slip_order_main_tmp")<0
 			Aerror(err)
@@ -13668,9 +13689,9 @@ ELSE &&Lihong 2022.09.13 ÂIµæ¯È
 			Return -1
 		ENDIF
 		SELECT * FROM fastfood_slip_order_main_tmp into CURSOR fastfood_slip_order_main_tmp READWRITE 
-		INSERT INTO fastfood_slip_order_main_tmp ([id],[inv_id],[tableno],[askno],[pplcnt],[begintime],[orgamt],[amount],[modiamt],[itemdiscamt],[srvamt],[taxamt],[rndamt],[discamt],[invamt],[cost], ;
+		INSERT INTO fastfood_slip_order_main_tmp ([order_uid],[id],[inv_id],[tableno],[askno],[pplcnt],[begintime],[orgamt],[amount],[modiamt],[itemdiscamt],[srvamt],[taxamt],[rndamt],[discamt],[invamt],[cost], ;
 		[recused],[printed],[printtime],[memberno],[barcode],[mincharge_mode],[tel],[address],[outlet_id],[void_id],[remark],[split],[used_station],[isForeign],[sn],[price_period_id] ) ;
-		VALUES (_order_id,_old_inv_Id,_tableno,_askno,_pplcnt,_begintime,_orgamt,_amount,_modiamt,_item_discamt,_srvamt,_taxamt,_rndamt,_discamt,_invamt,_cost, ;
+		VALUES (_order_uid,_order_id,_old_inv_Id,_tableno,_askno,_pplcnt,_begintime,_orgamt,_amount,_modiamt,_item_discamt,_srvamt,_taxamt,_rndamt,_discamt,_invamt,_cost, ;
 		.F.,.T.,datetime(),_member_no,_barcode,_mincharge_mode,TRIM(_tel),ALLTRIM(_addr),_outlet_id,_void_Id,TRIM(_fastfood_remark),nSplitNo,_used_station,_isForeign,_auto_sn,_price_period_id ) 
 		
 		RETURN 1 
@@ -13678,7 +13699,7 @@ ELSE &&Lihong 2022.09.13 ÂIµæ¯È
 ENDIF 
 
 
-If 	_curorder>0	 AND VARTYPE(llfastfood_order_do_hold)="U" AND VARTYPE(llfastfood_order_do_pre)="U" OR BETWEEN(_curorder, -199999, -100000)  &&Lihong 2023.03.29 ¼W¥[BETWEEN			
+IF _curorder>0	 AND VARTYPE(llfastfood_order_do_hold)="U" AND VARTYPE(llfastfood_order_do_pre)="U" OR BETWEEN(_curorder, -199999, -100000)  &&Lihong 2023.03.29 ¼W¥[BETWEEN			
 &&barcode mode ©ÎÂÂ³æ &&Lihong 2022-09-16 fastfood hold &&Lihong 2022-09-26 fastfood preorder
 
 	_order_id=_curorder
@@ -13694,7 +13715,8 @@ If 	_curorder>0	 AND VARTYPE(llfastfood_order_do_hold)="U" AND VARTYPE(llfastfoo
 
 		Endif
 	ENDIF 
-Else
+	
+ELSE
 
 	Local _rand_id, _retry, rand_id_sql
 	_retry = 0
@@ -14038,7 +14060,6 @@ Else
 
 Endif
 
-
 &&Lihong 2022.05.15
 *!*	TEXT TO ssql  NOSHOW TEXTMERGE
 
@@ -14244,8 +14265,8 @@ IF _curorder > 0 AND VARTYPE(__reprint_Slip_edit_item_disc)#"U" AND __reprint_Sl
 ENDIF 
 
 &&Lihong 2023-06-02 ¼pÅã 
-*If __print_to_kitchen And Vartype(_fastfood_save_only)="U" And _onlysave=.F. AND (!Upper(_run_mode)=="DINE" OR _print_to_kitchen_outlet=.T.) AND VARTYPE(llfastfood_order_do_hold)="U" && ¬O§_¦C¦L¼p©Ð³æ ¸ò ³]©w	&&§ÖÀ\¼Ò¦¡¸É³æ¤]¤£¦L &&Lihong 2022.03.09 &&Àç·~°Ï°ì¬O§_¦C¦L¼p©Ð³æ
-If __print_to_kitchen And Vartype(_fastfood_save_only)="U" And _onlysave=.F. AND (Upper(_run_mode)=="DINE" AND _print_to_kitchen_outlet=.T.) AND VARTYPE(llfastfood_order_do_hold)="U" && ¬O§_¦C¦L¼p©Ð³æ ¸ò ³]©w	&&§ÖÀ\¼Ò¦¡¸É³æ¤]¤£¦L &&Lihong 2022.03.09 &&Àç·~°Ï°ì¬O§_¦C¦L¼p©Ð³æ
+If __print_to_kitchen And Vartype(_fastfood_save_only)="U" And _onlysave=.F. AND (!Upper(_run_mode)=="DINE" OR _print_to_kitchen_outlet=.T.) AND VARTYPE(llfastfood_order_do_hold)="U" && ¬O§_¦C¦L¼p©Ð³æ ¸ò ³]©w	&&§ÖÀ\¼Ò¦¡¸É³æ¤]¤£¦L &&Lihong 2022.03.09 &&Àç·~°Ï°ì¬O§_¦C¦L¼p©Ð³æ
+*If __print_to_kitchen And Vartype(_fastfood_save_only)="U" And _onlysave=.F. AND (Upper(_run_mode)=="DINE" AND _print_to_kitchen_outlet=.T.) AND VARTYPE(llfastfood_order_do_hold)="U" && ¬O§_¦C¦L¼p©Ð³æ ¸ò ³]©w	&&§ÖÀ\¼Ò¦¡¸É³æ¤]¤£¦L &&Lihong 2022.03.09 &&Àç·~°Ï°ì¬O§_¦C¦L¼p©Ð³æ
 	Select a.*, IIF(ISNULL(b.id),NVL(bb.local_print_kit, .F.),NVL(b.local_print_kit, .F.)) as local_print_kit FROM order_itemlist_tmp a LEFT JOIN work_order_tmp b ON a.item_id=b.id LEFT JOIN work_order_tmp0 bb ON a.item_id=bb.id ;
 	WHERE a.sitem=.F. AND printed=.F. And onlysave=.F. And Undefine=.F.  And  item_id>=0 INTO CURSOR order_itemlist_to_printer READWRITE 
 	*LcFastFood_info=""
@@ -15473,7 +15494,7 @@ If LOWER(_run_mode)="dine" AND nSplitNo=0 OR VARTYPE(llvs_so_add_order_split)#"U
 
 	_have_unfinish=Iif(N>0,1,0)
  
-	ssql="update tables set order_id=?_order_id ,still_sitting=0,ppl=?_pplcnt  ,have_unfinish=?_have_unfinish, updateno=ISNULL(updateno,0)+1,timer_endtime=?_order_timer_endtime,remark2= ?_remark2 where tableno=?_tableno and nsubtable=0"
+	ssql="update tables set order_id=?_order_id,order_uid=?_order_uid,still_sitting=0,ppl=?_pplcnt  ,have_unfinish=?_have_unfinish, updateno=ISNULL(updateno,0)+1,timer_endtime=?_order_timer_endtime,remark2= ?_remark2 where tableno=?_tableno and nsubtable=0"
 	IF VARTYPE(llvs_so_add_order_split)#"U" AND llvs_so_add_order_split &&Lihong 2022.10.20 ¦L³æ«á¦A¤Jitem ¤À³æ (Qrcode)
 	ELSE 
 		ssql=ssql+Chr(10)+"if exists (select tableno from tables with (nolock)  where status='P'  and  tableno=?_tableno   and nsubtable=0)  update tables set status='T' where tableno=?_tableno  and nsubtable=0"
@@ -15962,7 +15983,7 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 		Select work_order_tmp12	&&¬O§_«ü©w¨ä¥¦»y¨¥¦C¦L
 		Locate For Id=_printer
 
-		sp(k,1)=sp2(k)													&& printer  id
+		sp(k,1)=TRANSFORM(_printer) &&Lihong 2023.08.04 All Items On 1 Slip sp2(k)													&& printer  id
 		sp(k,2)=Trim(Printer)											&& printer  name
 
 		sp(k,3)=Iif(_system_langue="CN",Trim(desccn),Trim(Descen))		&& place
@@ -16056,7 +16077,7 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 	&&Lihong 2023-06-02 ¼pÅã 
 	lladd_to_kit_disp = .F.
 	_to_printer = ""
-	IF Upper(_run_mode)=="DINE" AND LOWER(_dataname)=="order_itemlist_to_printer" &&AND NVL(work_order_tmp12.kit_disp_station_id, 0)>0 &&AND EMPTY(NVL(&_dataname..kit_disp_uid,""))
+	IF LOWER(_dataname)=="order_itemlist_to_printer" &&Upper(_run_mode)=="DINE" AND  &&AND NVL(work_order_tmp12.kit_disp_station_id, 0)>0 &&AND EMPTY(NVL(&_dataname..kit_disp_uid,""))
 		For k=1 To Alen(sp)/7
 			_printer=Val(sp(k,1))	
 			Select work_order_tmp12
@@ -16097,7 +16118,7 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 *!*
 		&&Lihong 2023-06-02 ¼pÅã 
 		_printed = 0
-		IF Upper(_run_mode)=="DINE"
+		IF Upper(_run_mode)=="DINE" OR BETWEEN(_id, -199999, -100000)
 			Select work_order_tmp12
 			Locate For Id=_printer
 			IF NVL(work_order_tmp12.kit_disp_station_id, 0)>0 AND NVL(work_order_tmp12.kit_disp_also_print, .F.)=.F.
@@ -16133,6 +16154,7 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 				IF NVL(kit_disp_uid_qty_tmp.qty, 0)=0
 				
 				lladd_to_kit_disp = .T.
+				_kit_print_type = (BETWEEN(_id, -199999, -100000))
 				
 				TEXT TO ssql TEXTMERGE NOSHOW 
 				DECLARE @status int 
@@ -16147,7 +16169,8 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 					,[status]
 					,[void_time]
 					,[void_reason]
-					,[to_printer] )
+					,[to_printer]
+					,[type] )
 					VALUES
 					(?<<_dataname>>.kit_disp_uid
 					,?_id
@@ -16157,7 +16180,8 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 					,2
 					,getdate()
 					,?_void_reason 
-					,?_to_printer)
+					,?_to_printer
+					,?_kit_print_type)
 				ELSE 
 				begin
 					IF @status<>999
@@ -16460,7 +16484,7 @@ If !Empty(_printer)	And Alines(sp2,_printer,4,",")>0			&&¦³«ü©w¥´¦L¾÷,«h¿é¥X¥´¦L
 		nItem_Qty =_qty
 		nSplit  =1
 
-		If  _print_slipt
+		If  _print_slipt And (_item_cancel=.F. OR _item_cancel=.T. AND (VARTYPE(__void_item_follow_split_qty)="U" OR __void_item_follow_split_qty=.T.) ) &&Lihong 2023.08.01
 
 			nSplit  = _qty
 			nItem_Qty =1
@@ -18012,7 +18036,7 @@ Endfunc
 *-----------------------------------
 Function new_table
 Lparameters _inv_id,_barcode_mode,_no_printPaylist				&&«ö"·sÂi"ª½±µ¥I´Ú		_barcode_mode ¬°±ø½X¼Ò¦¡¡A¤£§@²MªÅÂi
- 
+
 _date=getbelongdate()
 
 If Vartype(_android_station)#"U"
@@ -18029,7 +18053,8 @@ If Vartype(__check_out_reprint_inv)="L" And __check_out_reprint_inv
 
 	If Val(__inv_printer)>0	&&AND  !EMPTY(__Inv_direct_printer)	&&¬O§_¦w¸Ë¦³¥´¦L¾÷
 
-		inv_reprint(_inv_id,"CN",.T.,.F.)		&&­«¦Lµo²¼
+
+		inv_reprint(_inv_id, IIF(_system_langue="EN" AND VARTYPE(__default_en_only_en)#"U" AND __default_en_only_en, "EN", "CN"),.T.,.F.)		&&­«¦Lµo²¼ &&Lihong 2023.08.07 "CN"->IIF
 
 
 	Endif
@@ -18648,6 +18673,12 @@ IF _new_table_deposit_id>0 AND _new_table_deposit_amount>0 AND _new_table_deposi
 ENDIF 
 *
 
+&&Lihong 2023.08.04
+LOCAL lc_Ecr_cardno, _oct_invid, _oct_did, _oct_cid, _oct_remain, _oct_extra_info, _oct_card_avd
+_oct_did = Iif(Vartype(_octopus_device_ID) = "U", "", _octopus_device_ID)
+_oct_cid = Iif(Vartype(_octopus_card_ID) = "U", "", _octopus_card_ID)
+_oct_remain = Iif(Vartype(_octopus_remain_value) = "U", 0, _octopus_remain_value)
+
 &&Lihong 2021.10.08 ¤U­±ÁÙ¦³1³BIf __print_pay_slip
 If __print_pay_slip And _no_printPaylist=.F.	And !Empty(__sys_pay_printer) AND _outlet_paylist_print					&&¬O§_¦C¦L¥I´Ú²M³æ(¨t²Î³]©w)
 
@@ -18697,6 +18728,9 @@ SCAN FOR NVL(is_paid,.F.)=.F.
 			&&Lihong 2022.05.01
 			REPLACE paidamt WITH _cust_amt, aa_sub_id WITH lcaa_sub_id IN pay_print_main &&Lihong 2022.08.19 ¤À±b paidamt WITH _payamt aa_sub_id WITH lcaa_sub_id
 		ENDIF 
+		&&Lihong 2023.08.04
+		REPLACE oct_remain WITH _oct_remain, oct_card_id WITH _oct_cid, oct_device_id WITH _oct_did IN pay_print_main
+
 		
 		Select  payway_print_detail		&&·s¥x
 		Go Top
@@ -18736,7 +18770,7 @@ SCAN FOR NVL(is_paid,.F.)=.F.
 		ssql="insert into pay_print_main (pid,inv_Id,tableno,pplcnt,printer,def_printer,act_printer,printed,sendtime,printtime,username,station_id,langue,fastfood,print_adduser,"+; &&¥´¦L
 		"invamt,paidamt,tips,training,oct_device_id,oct_card_id,oct_remain, aa_sub_id)"+; 
 		" values (?_pid,?_inv_id,?_table_info,?_pplcnt,?_printer,?_printer,'',?__pay_print_to_local,?DATETIME(),'',?_pay_user_name,?_station_id,?_system_langue,?cun_tmp.fastfood,?__slip_print_adduser,"+;
-			"?cun_tmp.invamt,?_cust_amt,?cun_tmp.tips,?GL_training,'','',0, ?lcaa_sub_id)"
+			"?cun_tmp.invamt,?_cust_amt,?cun_tmp.tips,?GL_training,?_oct_did,?_oct_cid,?_oct_remain, ?lcaa_sub_id)"
 
 		IF VARTYPE(_cash_and_deposit_amt)#"U"
 			ssql="if not exists (select pid from pay_print_main where pid=?_pid) "+CHR(13)+ssql 
@@ -18835,7 +18869,7 @@ SCAN FOR NVL(is_paid,.F.)=.F. &&Lihong 2022.08.19 ¤À±b _payamt ->
 	ENDIF 
 	
 	&&Lihong 2023.04.11 
-	LOCAL lc_Ecr_cardno, _oct_invid
+	&&Lihong 2023.08.04 LOCAL lc_Ecr_cardno, _oct_invid
 	lc_Ecr_cardno = ""
 	_oct_invid = 0
 	IF VARTYPE(_cup_direct_pay_cash_payway_cardno)#"U" &&VARTYPE(oEcr) # "U" and oEcr.type = "deduct"     
@@ -18845,7 +18879,7 @@ SCAN FOR NVL(is_paid,.F.)=.F. &&Lihong 2022.08.19 ¤À±b _payamt ->
 		_oct_invid = _cup_direct_pay_cash_oct_invid
 	ENDIF 
 	
-	LOCAL _oct_did, _oct_cid, _oct_remain, _oct_extra_info, _oct_card_avd
+	&&Lihong 2023.08.04 LOCAL _oct_did, _oct_cid, _oct_remain, _oct_extra_info, _oct_card_avd
 	
 	_oct_did = Iif(Vartype(_octopus_device_ID) = "U", "", _octopus_device_ID)
 	_oct_cid = Iif(Vartype(_octopus_card_ID) = "U", "", _octopus_card_ID)
@@ -18873,8 +18907,9 @@ SCAN FOR NVL(is_paid,.F.)=.F. &&Lihong 2022.08.19 ¤À±b _payamt ->
 		Return -1
 	ENDIF
 	
-	Release _octopus_device_ID,_octopus_card_ID,_octopus_remain_value,_octopus_invID, _octopus_extra_info, _octopus_card_avd
+	&&Lihong 2023.08.04 Release _octopus_device_ID,_octopus_card_ID,_octopus_remain_value,_octopus_invID, _octopus_extra_info, _octopus_card_avd
 ENDSCAN 
+Release _octopus_device_ID,_octopus_card_ID,_octopus_remain_value,_octopus_invID, _octopus_extra_info, _octopus_card_avd
 
 &&Lihong 2022.08.19 ¤À±b
 If SQLExec(nhand,"DELETE inv_split WHERE inv_id = ?_inv_id")<0
@@ -18966,7 +19001,7 @@ Endif
 		TEXT TO ssql TEXTMERGE NOSHOW 
 			select a.id,a.uid,a.item_id,a.amount,a.real_amount,a.round_amount,a.modi_amount,a.disc_amount,a.srv_amount,a.tax_amount,a.xdisc from inv_detail a with (nolock) 
 			left join item with (nolock) on a.item_id=item.id 
-			where a.id=?_inv_id and a.sitem_sub=0 and (a.askdept=1 or item.modi_dept_after_inv=1) and not exists (select id from inv_itemdept where id=?_inv_id and Parent_id=a.uid and dept_id<>?_default_itemdept_id)
+			where a.id=?_inv_id and a.sitem_sub=0 and (a.askdept=1 or item.modi_dept_after_inv=1) and not exists (select id from inv_itemdept where id=?_inv_id and Parent_id=a.uid ) --and dept_id<>?_default_itemdept_id
 		ENDTEXT 
 		If SQLExec(nhand,ssql, "cun_tmp")<0
 			Aerror(err)
@@ -18984,7 +19019,7 @@ Endif
 				INSERT INTO inv_itemdept (id,parent_id,item_id,dept_id,amount,srvamt) VALUES (?_inv_id,?cun_tmp.uid,?cun_tmp.item_id,?_default_itemdept_id,?cun_tmp.real_amount-?cun_tmp.srv_amount,?cun_tmp.srv_amount)
 			ENDTEXT 
 			IF RECNO("cun_tmp")=1
-				ssql = "delete from inv_itemdept where id=?_inv_id" + CHR(13) + ssql 
+				*ssql = "delete from inv_itemdept where id=?_inv_id" + CHR(13) + ssql 
 			ENDIF 
 			If SQLExec(nhand,ssql)<0
 				Aerror(err)
@@ -18999,6 +19034,10 @@ Endif
 	ENDIF 
 *ENDIF &&Àq»{¤À±b
 
+&&Lihong 2023.08.02 «D°Ý³¡ªù¤À±b
+IF add_non_ask_itemdept(_inv_id)<0
+	RETURN -1
+ENDIF 
 
 If _memberID>0
 &&¦pªG¦³·|­û ,«h°O¿ý·|­û®ø¶Oª÷ÃB¤Î¦¸¼Æ
@@ -19218,8 +19257,10 @@ ENDIF
 
 
 &&Lihong 2023-06-02 ¼pÅã
-ssql="delete from order_kit_print where kit_disp_uid in (select kit_disp_uid from order_detail with(nolock) where id=?_curorder and kit_disp_uid is not null)"
-ssql=ssql+Chr(13)+"delete from order_kit_print where tableno=?lcTableno and kit_disp_uid not in (select kit_disp_uid from order_detail with(nolock) where kit_disp_uid is not null)" 
+*ssql="-- delete from order_kit_print where ISNULL(type,0)=0 AND kit_disp_uid in (select kit_disp_uid from order_detail with(nolock) where id=?_curorder and kit_disp_uid is not null)"
+*-- and kit_disp_uid not in (select kit_disp_uid from order_detail with(nolock) where kit_disp_uid is not null)
+ssql="delete from order_kit_print where ISNULL(type,0)=0 AND tableno=?lcTableno " 
+ssql=ssql+Chr(13)+"delete from order_kit_print where ISNULL(type,0)<>0 AND (datediff(hh, complete_time, getdate())>24 OR datediff(hh, void_time, getdate())>24 OR datediff(hh, add_time, getdate())>24 )" 
 
 ssql=ssql+Chr(13)+"delete from order_main where id=?_curorder"		&&§R°£ order ¼Æ¾Ú
 ssql=ssql+Chr(13)+"delete from order_detail where id=?_curorder"
@@ -19271,17 +19312,16 @@ If _barcode_mode=.F.
 *!*		ELSE
 *!*		
 
-	&&Lihong 2021.12.29 ¦PÂi
+	&&Lihong 2021.12.29 ¦PÂi &&Lihong 2023.07.19 void item show
+	*-- delete from order_kit_print where ISNULL(type,0)=0 AND kit_disp_uid in (select kit_disp_uid from order_detail with(nolock) WHERE kit_disp_uid is not null 
+	*-- and id in (select order_id from tables where tableno in (SELECT tableno FROM same_table_detail WITH (nolock) WHERE tableno<>?lcTableno and same_table_id in (SELECT same_table_id FROM same_table_detail WITH (nolock) WHERE tableno=?lcTableno ) ) and nsubtable=0) )
+	*-- AND kit_disp_uid not in (select kit_disp_uid from order_detail with(nolock) where kit_disp_uid is not null) 
 	lcupdate_same_table = ""
 	IF VARTYPE(__same_tables)#"U" and __same_tables
 		TEXT TO lcupdate_same_table noshow
-			delete from order_kit_print where kit_disp_uid in (select kit_disp_uid from order_detail with(nolock) WHERE kit_disp_uid is not null 
-			and id in (select order_id from tables where tableno in (SELECT tableno FROM same_table_detail WITH (nolock) WHERE tableno<>?lcTableno and same_table_id in (SELECT same_table_id FROM same_table_detail WITH (nolock) WHERE tableno=?lcTableno ) ) and nsubtable=0) )
-			
-			delete from order_kit_print where kit_disp_uid not in (select kit_disp_uid from order_detail with(nolock) where kit_disp_uid is not null 
-			AND tableno in (SELECT tableno FROM same_table_detail WITH (nolock) WHERE tableno<>?lcTableno and same_table_id in (SELECT same_table_id FROM same_table_detail WITH (nolock) WHERE tableno=?lcTableno) ) )
+			delete from order_kit_print where ISNULL(type,0)=0 AND tableno in (SELECT tableno FROM same_table_detail WITH (nolock) WHERE tableno<>?lcTableno and same_table_id in (SELECT same_table_id FROM same_table_detail WITH (nolock) WHERE tableno=?lcTableno) ) 
 
-			update  tables set status='',begindate=getdate(),order_id=0,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0,updateno=ISNULL(updateno,0)+1,ready_pay=0,crm_member=0,check_valid=null,remark='',remark2='' 
+			update  tables set status='',begindate=getdate(),order_id=0,order_uid=null,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0,updateno=ISNULL(updateno,0)+1,ready_pay=0,crm_member=0,check_valid=null,remark='',remark2='' 
 			where tableno in (SELECT tableno FROM same_table_detail WITH (nolock) WHERE tableno<>?lcTableno and same_table_id in (SELECT same_table_id FROM same_table_detail WITH (nolock) WHERE tableno=?lcTableno) ) and nsubtable=0 
 
 			update a set a.ppl=(select SUM(ppl) from tables where parent_table=a.tableno) from tables a where page_no>0 and tableno in 
@@ -19302,7 +19342,7 @@ If _barcode_mode=.F.
 		IF exists (select tableno from tables where nshare_order>1 AND tableno=?lcTableno and nsubtable=0)
 			UPDATE tables SET nshare_order=nshare_order-1 WHERE tableno=?lcTableno and nsubtable=0
 		ELSE
-			update  tables set status='',still_sitting=?_still_sitting,begindate=getdate(),order_id=0,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0,updateno=ISNULL(updateno,0)+1,ready_pay=0,crm_member=0,check_valid=null,remark='',remark2='' where tableno=?lcTableno and nsubtable=0
+			update  tables set status='',still_sitting=?_still_sitting,begindate=getdate(),order_id=0,order_uid=null,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0,updateno=ISNULL(updateno,0)+1,ready_pay=0,crm_member=0,check_valid=null,remark='',remark2='' where tableno=?lcTableno and nsubtable=0
 			
 			<<lcupdate_same_table>>
 	ENDTEXT
@@ -19405,9 +19445,9 @@ If _barcode_mode=.F. And !Empty(_link_table)		&&ÃöÁpÀ\Âiª¬ºA
 	For lk=1 To Alen(ms)
 		_link_table=ms(lk)
 		If __table_add_cleaning_status
-			ssql="update  tables set status='C',begindate=getdate(),order_id=0,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0 where tableno=?_link_table and nsubtable=0"
+			ssql="update  tables set status='C',begindate=getdate(),order_id=0,order_uid=null,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0 where tableno=?_link_table and nsubtable=0"
 		Else
-			ssql="update  tables set status='',begindate=getdate(),order_id=0,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0 where tableno=?_link_table and nsubtable=0"
+			ssql="update  tables set status='',begindate=getdate(),order_id=0,order_uid=null,ppl=0,nshare_order=1,inv_id=0,have_unfinish=0,link_table='',split=0,item_warning=0 where tableno=?_link_table and nsubtable=0"
 		Endif
 
 
@@ -23480,6 +23520,12 @@ ELSE
 	_deposit_booking_time = IIF(ISNULL(pay_cun_tmp.booking_time),"",IIF(pay_cun_tmp.booking_time=CTOT("1900-01-01"),"",TTOC(pay_cun_tmp.booking_time)))
 	_deposit_booking_time = LEFT(_deposit_booking_time,16)
 	_deposit_remark1 = NVL(pay_cun_tmp.remark1,"")
+	
+	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú By Waston 31/08/2023
+		_paidtime = IIF(ISNULL(pay_cun_tmp.add_time),"",IIF(pay_cun_tmp.add_time=CTOT("1900-01-01"),"",TTOC(pay_cun_tmp.add_time)))
+		_paidtime = CTOT(LEFT(_paidtime,16))
+		_deposit_booking_time = ""
+	ENDIF 
 ENDIF 
 
 _report_Training=pay_print_tmp1.training						&&¬O§_°V½m¼Ò¦¡
@@ -23490,6 +23536,15 @@ cnotice=Iif(_report_Training,getmessage("_training"),"")
 IF VARTYPE(_invinfo_reprint_paylist)#"U"		&&Àç·~¸ê®Æ¤¤­«¦L¥I´Ú²M³æ
 
 	cNotice = "****" + getmessage("_reprint") +" ****"
+	_report_Training = .t. 
+
+
+ENDIF	
+
+
+IF VARTYPE(_deposit_call_cashier_status)#"U" AND _deposit_call_cashier_status = 2		&&¤@¦¸©Ê­qª÷°h´Ú &&¤@¦¸©Ê­qª÷°h´Ú By Waston 31/08/2023
+
+	cNotice = "****" + getmessage("_deposit_refund") +" ****"
 	_report_Training = .t. 
 
 
@@ -23512,13 +23567,20 @@ _lbinvno=getmessage("_invno")			&&µo²¼¸¹½X
 IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 	_lbpaylist=getmessage("_deposit_slip") &&­qª÷³æ Deposit Slip &&_lbpaylist+"("+getmessage("_deposit")+")"
 	_lbtableNo=getmessage("lbl_contact")
-	_lbinvno=getmessage("lbl_deposit_no")
+	_lbinvno=getmessage("lbl_deposit_no") 
 	_barcodetxt  = "DET"+Iif(_inv_id<=9999999,Replicate("0",7-Len(Alltrim(Str(_inv_id))))+Alltrim(Str(_inv_id)),Alltrim(Str(_inv_id))) &&_cinvno
 	_barcode = "*"+_barcodetxt+"*"
 	_barcodetxt = Alltrim(Str(_inv_id))
 	*_barcodetxt=Padl(Alltrim(Str(ABS(_inv_id))),6,"0")
 	_cusername = _deposit_booking_time
 	_member_name = _deposit_remark1
+	
+	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2 &&¤@¦¸©Ê­qª÷°h´Ú By Waston 31/08/2023
+		_lbpaylist=getmessage("_refund_slip")
+		_lbinvno=getmessage("_deposit_refund") + getmessage("_order_no")
+	ENDIF 
+
+	
 ENDIF 
 _lbusername=getmessage("_cashier")	&&Àç·~­û
 _lbpayway=getmessage("_payway")			&&¥I´Ú¤è¦¡
@@ -23538,7 +23600,12 @@ _lbtotalamt=getmessage("_totalamt")	&&Á`ª÷ÃB
 _lbInvAmt=getmessage("_inv_amt")+Iif(!Empty( __local_CURRENCY),"("+Trim(__local_CURRENCY) +")","")		&&µo²¼ª÷ÃB
 IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 	_lbInvAmt=getmessage("_deposit_amt") &&­qª÷ª÷ÃB Deposit Amount
-	_lbusername = getmessage("lbl_deposit_datetime") &&îAÓ†ÈÕÆÚ•rég
+	_lbusername = getmessage("lbl_deposit_datetime") &&¹w­q¤é´Á
+	
+*!*		IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&­qª÷°h´Ú  By Waston 31/08/2023
+*!*			_lbInvAmt=getmessage("_refund_amt") &&°h´Úª÷ÃB Deposit Refund Amount
+*!*		ENDIF 
+	
 ENDIF 
 
 *_lbpayamt=getmessage("_paid_amt")+"("+TRIM(__local_currency) +")"		&&¥I´Úª÷ÃB
@@ -23612,6 +23679,13 @@ IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 	_depositNO = LTRIM(_cinvno,"0")
 	_cinvno = ""
 	_lbinvno = ""
+	
+	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú  By Waston 31/08/2023
+		_lbdeposittime = getmessage("_refund_time") &&°h´Ú®É¶¡ Refund Time
+		_lbdepositNO = getmessage("_deposit_refund") + getmessage("_order_no")
+		_lbusername = ""
+	ENDIF 
+	
 ENDIF 
 
 &&Lihong 2022.08.19 ¤À±b
@@ -23956,8 +24030,16 @@ Select payway Distinct From paylist_tmp Into Array tmp_s
 If _Tally>1
 
 	_lbpayamt=getmessage("_paid_amt")+"("+Trim(__local_CURRENCY) +")"		&&¥I´Úª÷ÃB
+	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú  By Waston 31/08/2023
+		_lbpayamt=getmessage("_refund_amt")+"("+Trim(__local_CURRENCY) +")"		&&°h´Úª÷ÃB
+	ENDIF 
+ELSE 
+	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú  By Waston 31/08/2023
+		_lbpayamt=getmessage("_refund_amt") 		&&°h´Úª÷ÃB
+	ENDIF 	
+ENDIF
 
-Endif
+
 
 If Vartype(__pay_slip_print_disc)="L" And __pay_slip_print_disc	AND _deposit_pay_print=.F.	&&¬O§_¦L§é¦©¸ò³]©w &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 
@@ -24495,7 +24577,9 @@ Local _print_error,_error_msg
 Select slip_print_tmp
 Go Top
 
-QRcode_file="" &&Lihong 2023.06.09
+IF VARTYPE(QRcode_file)="U" 
+	QRcode_file ="" 	&&Lihong 2023.06.09
+ENDIF 
 If Vartype(_preview_slip_html)#"U"	 Or Vartype(_html_fileName)="C" 		&& ¥Í¦¨HTML
 
 	If File("__slip_tmp.html")
@@ -24923,7 +25007,7 @@ If lreturn="cancel"		&&¦pªG¼W­È¤£¦¨¥\,void inv
 
 	ssql="update inv set void=1,void_id=?_void_id,voidreason=?_void_reason,voidtime=getdate(),voiduser=?_login_user_name,updateno=?_updateno where Id=?_invId"		&&¨ú®øµo²¼
 	ssql=ssql+Chr(10)+"insert into order_void select '',id,item_id,descdisp,qty,price,amount,adduser,?_void_reason,printtime,getdate(),?_belongdate,modi_amount,disc_amount,srv_amount,sitem,sitem_sub,handwriting,0,?_station_id,?_void_id"+;
-		" from inv_detail where id=?_invID"
+		",(select order_uid from inv where id=?_invID),uid,item_code,0,'' from inv_detail where id=?_invID"
 
 *	ssql=ssql+Chr(10)+"update updateno set max_updateno=max_updateno+1 where table_name='order_void'  "
 
@@ -26076,7 +26160,7 @@ SCAN FOR item_id<> - 6 AND item_id<> - 7 &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷ -7
 		Nvl(cun_tmp1.gift,.F.),Nvl(cun_tmp1.giftred,.F.),Nvl(cun_tmp1.transnumber,''),_desccn,_descen, ;
 		null, Nvl(cun_tmp1.cloud_coupon_id,0), cun_tmp1.web_coupon_id, Nvl(cun_tmp1.web_coupon_code,""), NVL(cun_tmp1.print_single, .F.), NVL(cun_tmp1.points, 0), ;
 		NVL(cun_tmp1.pointed, .F.), NVL(cun_tmp1.same_tableno, ""), NVL(cun_tmp1.orgqty_case_mat, 0), NVL(cun_tmp1.price_type, 0), NVL(cun_tmp1.qty_entity, 0), ;
-		NVL(cun_tmp1.add_user_id,0), NVL(cun_tmp1.add_user_station_id,0),cun_tmp1.srv_per_org, .null., "", .F. )
+		NVL(cun_tmp1.add_user_id,0), NVL(cun_tmp1.add_user_station_id,0),cun_tmp1.srv_per_org, cun_tmp1.kit_disp_uid, NVL(cun_tmp1.to_printer,""), .F. )
 		
 		&&NVL(cun_tmp1.srv_per_org,0)
 
@@ -26174,7 +26258,7 @@ Use
 Select cun_tmp4		&&order_disc            ¾ã³æ§é¦©
 Scan
 
-	If member_id>0		&&¦pªG¬O·|­û§é¦©
+	If member_id>0 Or !Empty(member_number)		&&¦pªG¬O·|­û§é¦©  &&Lihong 2023-08-10 ¼W¥[Or !Empty(member_number)
 
 		_desc=getmessage("_member_disc")
 
@@ -26195,13 +26279,15 @@ Scan
 
 		_disc_level=Trim(tmp_s(1))
 	Else
-		_disc_level=""
+		&&Lihong 2023-08-10 _disc_level=""
+		_disc_level=Iif(cun_tmp4.disc_id= -99,"all", "") 
 	Endif
 
 
-	Insert Into order_disc_tmp (uid,disc_id,disc_type,descdisp,disc_per,disc_amount,member_id,adduser,disc_level,disc_reason,disc_remark,disc_qty,autodisc,after_inv) Values ;
+	Insert Into order_disc_tmp (uid,disc_id,disc_type,descdisp,disc_per,disc_amount,member_id,adduser,disc_level,disc_reason,disc_remark,disc_qty,autodisc,points,member_number,member_name,minamt,dedu_srv,after_inv) Values ;
 		(Sys(2015),cun_tmp4.disc_id,cun_tmp4.disc_type,_desc,cun_tmp4.disc_per,cun_tmp4.disc_amount,cun_tmp4.member_id,;
-		cun_tmp4.adduser,_disc_level,NVL(cun_tmp4.disc_reason,0),NVL(cun_tmp4.disc_remark,""),cun_tmp4.disc_qty,Iif(Isnull(cun_tmp4.autodisc),.F.,.F.),NVL(cun_tmp4.after_inv,.F.))		&&©Ò¦³ªº¦Û°Ê§é¦©³£Âà¬°´¶³q§é¦©
+		cun_tmp4.adduser,_disc_level,NVL(cun_tmp4.disc_reason,0),NVL(cun_tmp4.disc_remark,""),cun_tmp4.disc_qty,Iif(Isnull(cun_tmp4.autodisc),.F.,.F.),;
+		nvl(cun_tmp4.points,0),Nvl(cun_tmp4.member_number,""),"",0,Nvl(cun_tmp4.dedu_srv,.F.),NVL(cun_tmp4.after_inv,.F.))		&&©Ò¦³ªº¦Û°Ê§é¦©³£Âà¬°´¶³q§é¦©
 
 
 Endscan
@@ -28229,8 +28315,9 @@ Else
 
 
 	Endif
-
-
+	
+	_curorder_fastfood = _curorder &&Lihong 2023.07.19 void item show
+	
 	Private  _inv_id,_curorder,_outlet_id,_pplcnt,_FastFood_info,_belongdate,_station_id,_member_id,_tableno
 
 
@@ -28243,6 +28330,7 @@ Else
 	&&Lihong 2022-09-26 fastfood preorder
 	IF _run_mode="fastfood"
 		_pplcnt = 1
+		_curorder  = _curorder_fastfood &&Lihong 2023.07.19 void item show
 	ENDIF 
 
 Endif
@@ -28255,14 +28343,20 @@ _FastFood_info=Iif(_run_mode="fastfood",LcFastFood_info,"")
 _belongdate=getbelongdate()
 _station_id=__station_id
 
-If SQLExec(nhand,"select void_id from order_main where id=?_curorder","cun_tmp")<0
+If SQLExec(nhand,"select void_id,order_uid from order_main where id=?_curorder","cun_tmp")<0
 	Aerror(err)
 	error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
 
 	Return -1
 
-Endif
+ENDIF
 
+&&Lihong 2023.07.19 void item show
+IF _run_mode="fastfood"
+	_order_uid = IIF(VARTYPE(_curorder_uid)="C", _curorder_uid, null) 
+ELSE
+	_order_uid = IIF(VARTYPE(_curorder_uid)="C", _curorder_uid, cun_tmp.order_uid)
+ENDIF 
 If  Isnull(cun_tmp.void_id) Or cun_tmp.void_id=0			&&void_id¥Í¦¨
 
 	ssql="select MAX(void_id) as max_id from order_void"
@@ -28275,7 +28369,7 @@ If  Isnull(cun_tmp.void_id) Or cun_tmp.void_id=0			&&void_id¥Í¦¨
 
 	Endif
 
-	_void_id=Iif(Isnull(cun_tmp.max_id	),1,cun_tmp.max_id+1)
+	_void_id=Iif(Isnull(cun_tmp.max_id),1,cun_tmp.max_id+1)
 
 Else
 	_void_id= cun_tmp.void_id
@@ -28328,13 +28422,27 @@ If _Tally>0
 
 	If .T. &&Lihong 2022.07.05©l²×°O¿ý __mark_void_item_before_inv  Or __void_item_ask_reason	&&¦pªG¤w¦L³æ,¬O§_°Ý°O¿ývoid item ,¸òsetting
 
-		Local ctableno
+		Local ctableno,lnrecno,_sitem_dele,_parent_uid
 		ctableno=lcTableno
 		Select order_itemlist_tmp
 		Scan For Selected And printed And item_id<>0 And Undefine=.F.
-
+			
+			&&Lihong 2023.07.19 void item show
+			IF VARTYPE(_order_item_delete_repl)#"U"
+				_sitem_dele=.F.
+			ELSE 
+				_sitem_dele = sitem
+				IF _sitem_dele=.F. AND sitem_sub=.T.
+					_parent_id = parent_id
+					SELECT Selected from order_itemlist_tmp WHERE uid = _parent_id INTO CURSOR cun_tmp
+					_sitem_dele = (RECCOUNT("cun_tmp")>0 and cun_tmp.Selected=.T.)
+				ENDIF 
+			ENDIF 
+			
 			_uid=order_itemlist_tmp.uid
-
+			_item_code=order_itemlist_tmp.item_code
+			_modi_list=order_itemlist_tmp.modi_list
+			
 			TEXT TO ssql NOSHOW
 
 				INSERT INTO [order_void]
@@ -28358,7 +28466,12 @@ If _Tally>0
 				           ,[handwriting]
 				           ,[cln]
 				           ,[station_id]
-				           ,[void_id])
+				           ,[void_id]
+				           ,[order_uid]
+				           ,[uid]
+				           ,[item_code]
+				           ,[sitem_dele]
+				           ,[modi_list])
 				     VALUES
 				           (?cTableno
 				           ,?_inv_id
@@ -28381,6 +28494,11 @@ If _Tally>0
 				           ,0
 				           ,?_station_id
 				           ,?_void_id
+				           ,?_order_uid
+				           ,?_uid
+				           ,?_item_code
+				           ,?_sitem_dele
+				           ,?_modi_list
 				           )
 
 
@@ -28823,7 +28941,55 @@ Do Whil !Eof()
 *!*				*ENDIF 
 *!*				Select order_itemlist_tmp
 *!*				Go _recn
-			
+
+		&&Lihong 2023.08.14 
+		&&Lihong 2020.06.02 coupon AND (Thisform.run_mode="fastfood" OR ) 
+		*LPARAMETERS lcaction,lnbn_type, lclock_valid, lnorderid, lninvid, lccloud_coupon_id, lcweb_coupon_id, lcweb_coupon_code
+		IF .T. &&ll_inv_change_mode &&Lihong &&Lihong 2020.12.11 §ï¬°.T.¡]¹êª«¨éorder¨½§Y®É³]¬°¤w§I´«¡^
+			Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
+			IF !EOF("item_coupondisc_tmp")
+			SCAN 
+			IF VARTYPE(__storellet)#"U" AND __storellet &&Lihong 2023.04.27 ¦P®É¥Î¥ÕªZ¤h¤]¤£¥Î§ï
+				_disc_remark = "," + ALLTRIM(disc_remark) + ","
+				_coupon_member_code = STREXTRACT(_disc_remark, ",", ",",1)
+				_web_coupon_id = STREXTRACT(_disc_remark, ",", ",",2)
+				llupload_coupon = upload_storellet("unredeem", -1, _coupon_member_code, _web_coupon_id) &&lcaction, lninvid, lnmember_id, lccoupon_id
+			ELSE 
+				llupload_coupon = upload_coupon("revoke_redeemed_coupon_one", 2, null, 0, _inv_no, cloud_coupon_id, web_coupon_id, web_coupon_code) &&1:²{ª÷¨é 2:§I´«¨é
+			ENDIF 
+			IF llupload_coupon = .F.
+				*Aerror(err)
+				Sqlrollback(nhand)
+				SQLSetprop(nhand,"Transactions",1)
+				*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+				fmessagebox("_coupon_redeem_dele_fail") &&Â§¨é§I´« ºM¾P§I´«¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!
+				RETURN -1 
+				*Exit
+			ENDIF
+			ENDSCAN 
+			ENDIF 
+			USE IN SELECT("item_coupondisc_tmp")
+		ELSE 
+			Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
+			IF !EOF("item_coupondisc_tmp")
+			SCAN 
+			IF upload_coupon("unlock_coupon", 2, coupon_lock_valid, _curorder, _inv_id, cloud_coupon_id, web_coupon_id, web_coupon_code)=.F. 
+				*Aerror(err)
+				Sqlrollback(nhand)
+				SQLSetprop(nhand,"Transactions",1)
+				*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+				fmessagebox("Â§¨é§I´« ¸ÑÂê¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!")
+				Return -1 
+				*Exit
+			ENDIF
+			ENDSCAN 
+			ENDIF 
+			USE IN SELECT("item_coupondisc_tmp")
+		ENDIF 
+		Select order_itemlist_tmp
+		Go _recn
+		&&	
+		
 		If sitem Or sitem_sub  &&®MÀ\¤Î¨ä¤lµæ¦¡
 			
 			Select  uid,descdisp,qty,amount,printed From order_itemlist_tmp Where parent_id=_uid Into Cursor cun_tmp
@@ -28938,52 +29104,54 @@ Do Whil !Eof()
 *!*						ENDIF 
 				ENDIF 
 			*ENDSCAN
-			&&Lihong 2020.06.02 coupon AND (Thisform.run_mode="fastfood" OR ) 
-			*LPARAMETERS lcaction,lnbn_type, lclock_valid, lnorderid, lninvid, lccloud_coupon_id, lcweb_coupon_id, lcweb_coupon_code
-			IF .T. &&ll_inv_change_mode &&Lihong &&Lihong 2020.12.11 §ï¬°.T.¡]¹êª«¨éorder¨½§Y®É³]¬°¤w§I´«¡^
-				Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
-				IF !EOF("item_coupondisc_tmp")
-				SCAN 
-				IF VARTYPE(__storellet)#"U" AND __storellet &&Lihong 2023.04.27 ¦P®É¥Î¥ÕªZ¤h¤]¤£¥Î§ï
-					_disc_remark = "," + ALLTRIM(disc_remark) + ","
-					_coupon_member_code = STREXTRACT(_disc_remark, ",", ",",1)
-					_web_coupon_id = STREXTRACT(_disc_remark, ",", ",",2)
-					llupload_coupon = upload_storellet("unredeem", -1, _coupon_member_code, _web_coupon_id) &&lcaction, lninvid, lnmember_id, lccoupon_id
-				ELSE 
-					llupload_coupon = upload_coupon("revoke_redeemed_coupon_one", 2, null, 0, _inv_no, cloud_coupon_id, web_coupon_id, web_coupon_code) &&1:²{ª÷¨é 2:§I´«¨é
-				ENDIF 
-				IF llupload_coupon = .F.
-					*Aerror(err)
-					Sqlrollback(nhand)
-					SQLSetprop(nhand,"Transactions",1)
-					*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
-					fmessagebox("_coupon_redeem_dele_fail") &&Â§¨é§I´« ºM¾P§I´«¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!
-					RETURN -1 
-					*Exit
-				ENDIF
-				ENDSCAN 
-				ENDIF 
-				USE IN SELECT("item_coupondisc_tmp")
-			ELSE 
-				Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
-				IF !EOF("item_coupondisc_tmp")
-				SCAN 
-				IF upload_coupon("unlock_coupon", 2, coupon_lock_valid, _curorder, _inv_id, cloud_coupon_id, web_coupon_id, web_coupon_code)=.F. 
-					*Aerror(err)
-					Sqlrollback(nhand)
-					SQLSetprop(nhand,"Transactions",1)
-					*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
-					fmessagebox("Â§¨é§I´« ¸ÑÂê¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!")
-					Return -1 
-					*Exit
-				ENDIF
-				ENDSCAN 
-				ENDIF 
-				USE IN SELECT("item_coupondisc_tmp")
-			ENDIF 
-			Select order_itemlist_tmp
-			Go _recn
-			&&
+
+&&Lihong 2023.08.14 
+*!*				&&Lihong 2020.06.02 coupon AND (Thisform.run_mode="fastfood" OR ) 
+*!*				*LPARAMETERS lcaction,lnbn_type, lclock_valid, lnorderid, lninvid, lccloud_coupon_id, lcweb_coupon_id, lcweb_coupon_code
+*!*				IF .T. &&ll_inv_change_mode &&Lihong &&Lihong 2020.12.11 §ï¬°.T.¡]¹êª«¨éorder¨½§Y®É³]¬°¤w§I´«¡^
+*!*					Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
+*!*					IF !EOF("item_coupondisc_tmp")
+*!*					SCAN 
+*!*					IF VARTYPE(__storellet)#"U" AND __storellet &&Lihong 2023.04.27 ¦P®É¥Î¥ÕªZ¤h¤]¤£¥Î§ï
+*!*						_disc_remark = "," + ALLTRIM(disc_remark) + ","
+*!*						_coupon_member_code = STREXTRACT(_disc_remark, ",", ",",1)
+*!*						_web_coupon_id = STREXTRACT(_disc_remark, ",", ",",2)
+*!*						llupload_coupon = upload_storellet("unredeem", -1, _coupon_member_code, _web_coupon_id) &&lcaction, lninvid, lnmember_id, lccoupon_id
+*!*					ELSE 
+*!*						llupload_coupon = upload_coupon("revoke_redeemed_coupon_one", 2, null, 0, _inv_no, cloud_coupon_id, web_coupon_id, web_coupon_code) &&1:²{ª÷¨é 2:§I´«¨é
+*!*					ENDIF 
+*!*					IF llupload_coupon = .F.
+*!*						*Aerror(err)
+*!*						Sqlrollback(nhand)
+*!*						SQLSetprop(nhand,"Transactions",1)
+*!*						*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+*!*						fmessagebox("_coupon_redeem_dele_fail") &&Â§¨é§I´« ºM¾P§I´«¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!
+*!*						RETURN -1 
+*!*						*Exit
+*!*					ENDIF
+*!*					ENDSCAN 
+*!*					ENDIF 
+*!*					USE IN SELECT("item_coupondisc_tmp")
+*!*				ELSE 
+*!*					Select * From item_disc_tmp Where disc_id=-8 AND item_id = order_itemlist_tmp.uid INTO CURSOR item_coupondisc_tmp
+*!*					IF !EOF("item_coupondisc_tmp")
+*!*					SCAN 
+*!*					IF upload_coupon("unlock_coupon", 2, coupon_lock_valid, _curorder, _inv_id, cloud_coupon_id, web_coupon_id, web_coupon_code)=.F. 
+*!*						*Aerror(err)
+*!*						Sqlrollback(nhand)
+*!*						SQLSetprop(nhand,"Transactions",1)
+*!*						*error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+*!*						fmessagebox("Â§¨é§I´« ¸ÑÂê¥¢±Ñ¡AµLªk§R°£¡A½Ðµy«á¦A¸Õ!")
+*!*						Return -1 
+*!*						*Exit
+*!*					ENDIF
+*!*					ENDSCAN 
+*!*					ENDIF 
+*!*					USE IN SELECT("item_coupondisc_tmp")
+*!*				ENDIF 
+*!*				Select order_itemlist_tmp
+*!*				Go _recn
+*!*				&&
 
 			If item_id<>-3		&&³Ì§C®ø¶O¤£¥i§R°£
 				Delete
@@ -28999,8 +29167,7 @@ Do Whil !Eof()
 
 			Endif
 
-		Endif
-
+		ENDIF &&®MÀ\¤Î¨ä¤lµæ¦¡
 
 	Endif
 	Select order_itemlist_tmp
@@ -29054,7 +29221,13 @@ If !Empty(lcTranNumber)
 		oCrm.server_url = __crm_server_url
 
 		_error = .f.
-
+		
+		&&¦h­Ó§R°£®É,°Ñ¼Æ·|¶Ç¤J¦h­Ótransnumber,¼È¨ú²Ä¤@­Ó.By Waston 31/07/2023
+		
+		IF GETWORDCOUNT(lcTranNumber, ",") > 1 
+			lcTranNumber = GETWORDNUM(lcTranNumber, 1, ",")
+		ENDIF 	
+		
 		TRY 
 			oCrm.redeem_back(lcTranNumber)
 			
@@ -29107,36 +29280,30 @@ If !Empty(lcTranNumber)
 			fmessagebox("_cardrw_error_need_to_restart")
 			Return -1
 		Endif
+		lcTranNumbers = lcTranNumber	
+		lnTransnumber = GETWORDCOUNT(lcTranNumbers,",")
 
-		lcTran=Ltrim(Sys(2015),"_")
-		&&By Waston 29/06/2023 °h¦^¿n¤À
-		_vfp.AutoYield=.f.	
+		&&¦pªG¬O§R°£¦h­Ó´N­n³v­ÓVoid By Waston 31/07/2023
+		FOR i = 1 TO lnTransnumber
+
+			lcTranNumber = GETWORDNUM(lcTranNumbers,i,",")
+			lcTran=Ltrim(Sys(2015),"_")
+
+			&&°h¦^¥æ©ö¿n¤À,0¬°¦¨¥\ By Waston 25/07/2023
+			ret = olms.LmsVoidPurchaseFoxPro(__member_card_mark + lcTranNumber,lcTran)
+			
+			IF VAL(ret) <> 0
+				Sqlrollback(nhand)
+				SQLSetprop(nhand,"Transactions" ,1)
+				olms.DisconnectPrinter
+				olms=Null
+				Release olms
+				fmessagebox("_member_points_process_fail") &&·|­û¿n¤À¥¼¯à³B²z¦¨¥\¡A½ÐÁpµ¸ºÞ²z­û¡I
+				_order_change=.F.
+				Return -1
+			ENDIF 
+	 	ENDFOR 
 		
-		&&¥ý¨ú·|­û«H®§,³o¨½¯à¦¨¥\¨ú¨ì·|­û«H®§(member_id,member_number)
-		IF !EMPTY(_member_number)
-			loinf = olms.LmsGetMemberInfoFoxPro(_member_number)
-		ENDIF 		
-		
-		&&°h¦^¥æ©ö¿n¤À,0¬°¦¨¥\,¤£¦¨¥\ªð¦^204,¥æ©ö¤£¦s¦b,
-		ret = olms.LmsVoidPurchaseFoxPro(lcTranNumber,lcTran)
-		
-		=STRTOFILE("Voidªð¦^µ²ªG:" + Ret + CHR(13), "D:\Points.txt", 1)
-		
-		If !INLIST(Val(ret), 0, 204)
-			Sqlrollback(nhand)
-			SQLSetprop(nhand,"Transactions" ,1)
-			olms.DisconnectPrinter
-			olms=Null
-			Release olms
-			fmessagebox("_member_points_process_fail") &&·|­û¿n¤À¥¼¯à³B²z¦¨¥\¡A½ÐÁpµ¸ºÞ²z­û¡I
-			_order_change=.F.
-			_vfp.AutoYield=.t.	
-			Return -1
-		ELSE 
-			oRet = olms.lmspurchaseExFoxPro(lcTranNumber, 0, 0, 0, .f., 0, 0.00, "", "",TTOC(DATETIME(),1) )	
-			=STRTOFILE("­«ºâªð¦^µ²ªG:" + oRet(1) + CHR(13), "D:\Points.txt", 1)
-		Endif
-	
 	ENDIF
 	
 
@@ -35937,9 +36104,9 @@ Do Case
 
 &&¤K¹F³q(void ³æ)	cun_tmp13
 		&&Lihong 2022.02.25 MS¼W¥[cln
-		ssql=ssql+Chr(10)+"select inv.id,inv.cln,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,pay_detail.qty as pay_qty,"+;
+		ssql=ssql+Chr(10)+"select inv.id,inv.cln,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,inv.pay_cashier_user_id,sys_user.name as pay_cashier_user,pay_detail.qty as pay_qty,"+;
 			"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate"+;
-			" from "+view_inv+" inv left join "+view_inv_pay+"  pay_detail on inv.id=pay_detail.id where "+;
+			" from "+view_inv+" inv left join "+view_inv_pay+"  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where "+;
 			IIF(EMPTY(cln_diff_cond), "inv.cln"+reprint_cln_Id_filter, "(inv.cln"+reprint_cln_Id_filter+cln_diff_and_diff+"inv."+cln_diff_cond+")")+" and void=1 and octopus=1 order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b) inv.cln"+reprint_cln_Id_filter
 
 
@@ -36043,14 +36210,14 @@ Do Case
 		ssql=ssql+Chr(10)+"select * from outlet"					&&cun_tmp10 --outlet
 		
 		&&Lihong 2022.05.10 left join sys_user 
-		ssql=ssql+Chr(10)+"select inv.*,sys_user.name as pay_cashier_user from "+view_inv+" inv left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where inv.belongdate>=?_begdate and inv.belongdate<=?_enddate and inv.void=0 "+cond+" order by inv.id"	&&cun_tmp11 inv (¥¿±`µ²±b)
+		ssql=ssql+Chr(10)+"select inv.*,sys_user.name as pay_cashier_user from "+view_inv+" inv left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where inv.belongdate>=?_begdate and inv.belongdate<=?_enddate and inv.void=0 "+cond+" order by inv.id"	 &&cun_tmp11 inv (¥¿±`µ²±b)
 
 		ssql=ssql+Chr(10)+"select id,desccn,descen,code from item where dayend=1 and active=1 or id=-5"				&&cun_tmp12 item(¤éµ²®É¤ÀªR)
 
 &&¤K¹F³q(void ³æ)		cun_tmp13
-		ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,pay_detail.qty as pay_qty,"+;
+		ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,inv.pay_cashier_user_id,sys_user.name as pay_cashier_user,pay_detail.qty as pay_qty,"+;
 			"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate"+;
-			" from "+view_inv+" inv  left join "+view_inv_pay+"  pay_detail on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.void=1 and octopus=1 and belongdate>=?_begdate and belongdate<=?_enddate "+cond				&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
+			" from "+view_inv+" inv  left join "+view_inv_pay+"  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.void=1 and octopus=1 and belongdate>=?_begdate and belongdate<=?_enddate "+cond &&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
 
 
 		ssql=ssql+Chr(10)+"select a.*,b.desccn,b.descen,c.desccn as cpayway from expense a left join expense_main b "+;
@@ -36157,9 +36324,9 @@ Do Case
 
 &&¤K¹F³q¥I´Ú(void ³æ)
 
-				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,pay_detail.qty as pay_qty,"+;
+				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,inv.pay_cashier_user_id,sys_user.name as pay_cashier_user,pay_detail.qty as pay_qty,"+;
 				"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate"+;
-					" from inv with (nolock) left join  pay_detail with (nolock) on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 and "+lcadduser_filter+" order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
+					" from inv with (nolock) left join  pay_detail with (nolock) on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 and "+lcadduser_filter+" order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
 				&&Lihong 2023.07.17 inv.adduser=?_login_user_name
 
 				ssql=ssql+Chr(10)+"select a.*,b.desccn,b.descen,c.desccn as cpayway from expense a with (nolock) left join expense_main b with (nolock) "+;
@@ -36228,8 +36395,8 @@ Do Case
 				
 				ssql="select inv.*, "+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,"+;
-					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,inv.tableno "+;
-					" from inv left join  pay_detail on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 and inv.station_id=?_station_id order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
+					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,inv.tableno,sys_user.name as pay_cashier_user "+;
+					" from inv left join  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 and inv.station_id=?_station_id order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
 				ssql=ssql+Chr(10)+"select inv.id,inv.invamt,void_reason.desccn,void_reason.descen from inv left join void_reason on inv.voidreason=void_reason.id where  inv.cln=0 and inv.void=1"+;
 					" and inv.station_id=?_station_id  order by inv.id"		&&¨ú®øµo²¼(µ²±b«á¨ú®ø)
 				ssql=ssql+Chr(10)+"select * from payway"
@@ -36248,13 +36415,13 @@ Do Case
 					
 				ssql=ssql+Chr(10)+"select * from itemdept"					&&cun_tmp9	----item-->dept
 				ssql=ssql+Chr(10)+"select * from outlet"					&&cun_tmp10 --outlet
-				ssql=ssql+Chr(10)+"select * from inv where year(inv.paidtime)>2000 and cln=0 and void=0 and station_id=?_station_id order by id"	&&cun_tmp11 --inv
+				ssql=ssql+Chr(10)+"select inv.*,sys_user.name as pay_cashier_user from inv with (nolock) left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 and inv.station_id=?_station_id order by inv.id"	&&cun_tmp11 --inv
 				ssql=ssql+Chr(10)+"select id,desccn,descen,code from item where dayend=1 and active=1 or id=-5"				&&cun_tmp12 item(¤éµ²®É¤ÀªR)
 
 &&¤K¹F³q¥I´Ú(void ³æ)	cun_tmp13
-				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,pay_detail.qty as pay_qty, "+;
+				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,inv.pay_cashier_user_id,sys_user.name as pay_cashier_user,pay_detail.qty as pay_qty, "+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate"+;
-					" from inv left join  pay_detail on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 and inv.station_id=?_station_id order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
+					" from inv left join  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 and inv.station_id=?_station_id order by inv.id"						&&µo²¼²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
 
 
 				ssql=ssql+Chr(10)+"select a.*,b.desccn,b.descen,c.desccn as cpayway from expense a left join expense_main b "+;
@@ -36306,8 +36473,9 @@ Do Case
 				IF VARTYPE(__deposit_once)#"U" and __deposit_once
 				ssql_2 = "select inv.*, "+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,"+;
-					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,cast(ltrim(str(inv.id)) as varchar(20)) as tableno "+;
-					" from deposit inv with (nolock) left join deposit_pay_detail pay_detail with (nolock) on inv.id=pay_detail.id where year(inv.paidtime)>2000 and ISNULL(inv.cln,0)=0 and ISNULL(inv.void,0)=0 and inv.add_station=?_station_id order by inv.id"						&&deposit²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
+					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,cast(ltrim(str(inv.id)) as varchar(20)) as tableno, sys_user.name as pay_cashier_user "+;
+					" from deposit inv with (nolock) left join deposit_pay_detail pay_detail with (nolock) on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 "+;
+					"and ISNULL(inv.cln,0)=0 and ISNULL(inv.void,0)=0 and inv.add_station=?_station_id order by inv.id"						&&deposit²M³æ(¥¼²M¾÷,¤£¬Ovoid,¤wµ²±b)
 				ENDIF 
 
 			Otherwise								&&²M¾÷¤è¦¡,¥þ³¡
@@ -36318,8 +36486,8 @@ Do Case
 
 				ssql="select inv.*,"+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,"+;
-					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,inv.tableno "+;
-					" from inv left join  pay_detail on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 order by inv.id"
+					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,inv.tableno,sys_user.name as pay_cashier_user "+;
+					" from inv left join  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 order by inv.id"
 				ssql=ssql+Chr(10)+"select inv.id,inv.invamt,void_reason.desccn,void_reason.descen from inv left join void_reason on inv.voidreason=void_reason.id where  inv.cln=0 and inv.void=1"+;
 					" order by inv.id"		&&¨ú®øµo²¼(µ²±b«á¨ú®ø)
 				ssql=ssql+Chr(10)+"select * from payway"
@@ -36336,13 +36504,13 @@ Do Case
 		*		ssql=ssql+Chr(10)+"select id,uid,parent_id,item_id,qty,orgamt,amount,real_amount,round_amount,modi_amount,disc_amount,srv_amount,xdisc,tax2,tax_amount,askdept,item_code  from inv_detail where id in (select id from inv where year(inv.paidtime)>2000 and cln=0 and void=0)"		&&cun_tm8 ----inv_detail
 				ssql=ssql+Chr(10)+"select * from itemdept"					&&cun_tmp9	----item-->dept
 				ssql=ssql+Chr(10)+"select * from outlet"					&&cun_tmp10 --outlet
-				ssql=ssql+Chr(10)+"select * from inv where year(inv.paidtime)>2000 and cln=0 and void=0 order by id"	&&cun_tmp11 --inv
+				ssql=ssql+Chr(10)+"select inv.*,sys_user.name as pay_cashier_user from inv with (nolock) left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=0 order by inv.id"	&&cun_tmp11 --inv
 				ssql=ssql+Chr(10)+"select id,desccn,descen,code from item where dayend=1 and active=1 or id=-5"				&&cun_tmp12 item(¤éµ²®É¤ÀªR)
 
 &&¤K¹F³q¥I´Ú(void ³æ)	cun_tmp13
-				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,pay_detail.qty as pay_qty,"+;
+				ssql=ssql+Chr(10)+"select inv.id,inv.pplcnt,inv.orgamt,inv.invamt,inv.discamt,inv.modiamt,inv.rndamt,inv.srvamt,inv.taxamt,inv.fastfood,inv.outlet_id,inv.adduser,inv.pay_cashier_user_id,sys_user.name as pay_cashier_user,pay_detail.qty as pay_qty,"+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate"+;
-					" from inv left join  pay_detail on inv.id=pay_detail.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 order by inv.id"
+					" from inv left join  pay_detail on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 and inv.cln=0 and inv.void=1 and octopus=1 order by inv.id"
 
 
 				ssql=ssql+Chr(10)+"select a.*,b.desccn,b.descen,c.desccn as cpayway from expense a left join expense_main b "+;
@@ -36397,8 +36565,9 @@ Do Case
 				IF VARTYPE(__deposit_once)#"U" and __deposit_once
 				ssql_2 = "select inv.*,"+;
 					"isnull(pay_detail.pay_id,'') as pay_id,ISNULL(pay_detail.payamt,0) as payamt,ISNULL(pay_detail.netamt,0) as netamt,ISNULL(pay_detail.tips,0) as tips,"+;
-					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,cast(ltrim(str(inv.id)) as varchar(20)) as tableno "+;
-					" from deposit inv with (nolock) left join deposit_pay_detail pay_detail with (nolock) on inv.id=pay_detail.id where year(inv.paidtime)>2000 and ISNULL(inv.cln,0)=0 and ISNULL(inv.void,0)=0 order by inv.id"
+					"pay_detail.qty as pay_qty,pay_detail.pay_others,pay_detail.changes,pay_detail.changes_id,pay_detail.rate,cast(ltrim(str(inv.id)) as varchar(20)) as tableno, sys_user.name as pay_cashier_user "+;
+					" from deposit inv with (nolock) left join deposit_pay_detail pay_detail with (nolock) on inv.id=pay_detail.id left join sys_user with (nolock) on inv.pay_cashier_user_id=sys_user.id where year(inv.paidtime)>2000 "+;
+					"and ISNULL(inv.cln,0)=0 and ISNULL(inv.void,0)=0 order by inv.id"
 				ENDIF 
 
 		Endcase
@@ -36921,7 +37090,7 @@ IF VARTYPE(lninvid)#"N"
 	*RETURN 
 ENDIF
 
-LOCAL dbsql 
+LOCAL dbsql, _invamt_add_fee 
 
 IF !lcaction == "up"
 
@@ -37004,8 +37173,12 @@ IF !lcaction == "up"
 
 			&&Lihong 2022.12.14 storellet inv item 
 			_inv_item_jsonstr = ""
+			_inv_pay_jsonstr = ""
+			_invamt_add_fee = 0.00
 			IF lcaction == "Add_inv_storellet" OR lcaction == "Update_inv_storellet" 
-				If SQLExec(nhand, "SELECT item_code,sum(qty) as qty from inv_detail with (nolock) where id=?lninvid group by item_code", "storellet_inv_item_tmp")<0 
+				If SQLExec(nhand, "SELECT item_code,sum(qty) as qty, SUM(real_amount) as real_amount from inv_detail with (nolock) where id=?lninvid group by item_code"+CHR(13)+;
+				IIF(VARTYPE(__storellet)#"U" AND __storellet and VARTYPE(__storellet_tran)#"U" AND LOWER(__storellet_tran)="white", ;
+				"SELECT a.pay_id, b.desccn, b.descen, SUM(a.netamt) as netamt from pay_detail a with (nolock) left join payway b with (nolock) on a.pay_id=b.id where a.id=?lninvid group by a.pay_id, b.desccn, b.descen", ""), "storellet_inv_item_tmp")<0 
 					Aerror(err)
 					Sqlrollback(nhand)
 					SQLSetprop(nhand,"Transactions",1)
@@ -37026,14 +37199,30 @@ IF !lcaction == "up"
 					_inv_item_jsonstr = '{"inv_item":[' + _inv_item_jsonstr + ']}'
 				ENDIF 
 				*_inv_item_jsonstr = CHRTRAN(_inv_item_jsonstr, CHR(10)+CHR(13), "")
+				
+				IF VARTYPE(__storellet)#"U" AND __storellet and VARTYPE(__storellet_tran)#"U" AND LOWER(__storellet_tran)="white"
+					*SELECT real_amount FROM storellet_inv_item_tmp WHERE TRIM(item_code)=="-6" OR TRIM(item_code)=="-7" INTO CURSOR storellet_inv_item_tmp 
+					*_invamt_add_fee = storellet_inv_item_tmp.real_amount 
+					SELECT storellet_inv_item_tmp1
+					SCAN 
+						lccode = RTRIM(TRANSFORM(storellet_inv_item_tmp1.pay_id))
+						lcqty = TRANSFORM(NVL(storellet_inv_item_tmp1.netamt,0))
+						_inv_pay_jsonstr = _inv_pay_jsonstr + IIF(EMPTY(_inv_pay_jsonstr),"",",") + '{"id":&lccode' + ', "name_cn":"' + RTRIM(storellet_inv_item_tmp1.desccn) + '", "name_en":"' + RTRIM(storellet_inv_item_tmp1.descen) + '", "amt":&lcqty}'
+					ENDSCAN 
+					IF !EMPTY(_inv_pay_jsonstr)
+						_inv_pay_jsonstr = '{"payways":[' + _inv_pay_jsonstr + ']}'
+					ENDIF 
+				ENDIF 
+				*_inv_pay_jsonstr = CHRTRAN(_inv_pay_jsonstr, CHR(10)+CHR(13), "")
 				USE IN SELECT("storellet_inv_item_tmp")
+				USE IN SELECT("storellet_inv_item_tmp1")
 			ENDIF 
 			
 			&&IF exists (select a.memberno from inv a with (nolock) left join member with (nolock) on a.memberno=member.id left join member_type with (nolock) on member.type_id=member_type.id where a.id=?lninvid AND member_type.desccn='VIP' )
 			TEXT TO dbsql ADDITIVE NOSHOW TEXTMERGE 	
 			
-			INSERT INTO storellet_upload (check_valid, action, station_id, pos_shop_id, shop_code, shop_name, inv_id, invamt, paidtime, belongdate, inv_seq, create_date, member_id, inv_item_jsonstr)  
-			SELECT @cloud_check_valid, ?lcaction, @station_id, @pos_shop_id, @shop_code, @shop_name, ?lninvid, invamt, paidtime, belongdate, @inv_seq, getdate(), memberno, ?_inv_item_jsonstr 
+			INSERT INTO storellet_upload (check_valid, action, station_id, pos_shop_id, shop_code, shop_name, inv_id, invamt, paidtime, belongdate, inv_seq, create_date, member_id, inv_item_jsonstr, inv_pay_jsonstr)  
+			SELECT @cloud_check_valid, ?lcaction, @station_id, @pos_shop_id, @shop_code, @shop_name, ?lninvid, invamt, paidtime, belongdate, @inv_seq, getdate(), memberno, ?_inv_item_jsonstr, ?_inv_pay_jsonstr 
 			from inv with (nolock) where  id=?lninvid
 			
 			ENDTEXT 
@@ -37207,11 +37396,11 @@ ENDIF
 
 &&Lihong 2022.12.14 storellet inv item inv_item_jsonstr
 TEXT TO dbsql NOSHOW TEXTMERGE 
-select a.check_valid, a.action, a.pos_shop_id, a.shop_code, a.shop_name, a.inv_id, a.invamt, a.paidtime, a.belongdate, a.inv_seq, a.upcnt, b.cardno, a.coupon_id, a.member_carno, a.inv_item_jsonstr, member_type.desccn as member_vip 
+select a.check_valid, a.action, a.pos_shop_id, a.shop_code, a.shop_name, a.inv_id, a.invamt, a.paidtime, a.belongdate, a.inv_seq, a.upcnt, b.cardno, a.coupon_id, a.member_carno, a.inv_item_jsonstr, a.inv_pay_jsonstr, member_type.desccn as member_vip 
 from storellet_upload a WITH (nolock) left join member b with (nolock) on a.member_id = b.id left join member_type with (nolock) on b.type_id=member_type.id 
 where a.inv_id = ?lninvid and ISNULL(a.upcnt,0)>=0 order by  a.inv_seq 
 
-select a.check_valid, a.action, a.pos_shop_id, a.shop_code, a.shop_name, a.inv_id, a.invamt, a.paidtime, a.belongdate, a.inv_seq, a.upcnt, b.cardno, a.coupon_id, a.member_carno, a.inv_item_jsonstr, member_type.desccn as member_vip 
+select a.check_valid, a.action, a.pos_shop_id, a.shop_code, a.shop_name, a.inv_id, a.invamt, a.paidtime, a.belongdate, a.inv_seq, a.upcnt, b.cardno, a.coupon_id, a.member_carno, a.inv_item_jsonstr,  a.inv_pay_jsonstr, member_type.desccn as member_vip 
 from storellet_upload a WITH (nolock) left join member b with (nolock) on a.member_id = b.id left join member_type with (nolock) on b.type_id=member_type.id 
 where a.inv_id in (select inv_id from storellet_upload WITH (nolock) where station_id=?__station_id and inv_id <>?lninvid and ISNULL(a.upcnt,0)>=0) order by a.inv_id, a.inv_seq 
 ENDTEXT 
@@ -37269,8 +37458,10 @@ FOR i = 1 TO 2
 
 	&&Lihong 2022.12.14 storellet inv item inv_item_jsonstr
 	lcinv_item_jsonstr = ""
+	lcinv_pay_jsonstr = ""
 	IF LOWER(_action) == "add_inv_storellet" OR LOWER(_action) == "update_inv_storellet"
 		lcinv_item_jsonstr = NVL(inv_item_jsonstr, "")
+		lcinv_pay_jsonstr = NVL(inv_pay_jsonstr, "")
 	ENDIF 
 	
 IF "redeem" $ _action
@@ -37414,6 +37605,9 @@ oCMapi.api_name = lccmd
 	&&Lihong 2022.12.14 storellet inv item inv_item_jsonstr
 	IF LOWER(lccmd) == "add_inv_storellet" OR LOWER(lccmd) == "update_inv_storellet" AND !EMPTY(lcinv_item_jsonstr)
 		oCMapi.set_value("inv_item", lcinv_item_jsonstr)
+	ENDIF 
+	IF LOWER(lccmd) == "add_inv_storellet" OR LOWER(lccmd) == "update_inv_storellet" AND !EMPTY(lcinv_pay_jsonstr)
+		oCMapi.set_value("payways", lcinv_pay_jsonstr)
 	ENDIF 
 *ENDCASE 
 
@@ -38317,5 +38511,63 @@ FUNCTION get_oct_invid()
 	Endif
 
 	RETURN _oct_invid
+
+ENDFUNC 
+
+
+&&Lihong 2023.08.02 «D°Ý³¡ªù¤À±b
+FUNCTION add_non_ask_itemdept(_inv_id)
+IF VARTYPE(__save_dept_amt_at_pay)#"U" AND __save_dept_amt_at_pay 
+	_default_itemdept_id = -888 &&cun_tmp.id
+	TEXT TO ssql TEXTMERGE NOSHOW 
+		DELETE inv_itemdept where id=?_inv_id AND parent_id in (select a.uid from inv_detail a with (nolock) left join item with (nolock) on a.item_id=item.id where a.id=?_inv_id and a.sitem_sub=0 and (a.askdept=0 and ISNULL(item.modi_dept_after_inv, 0)=0))
+
+		select a.id,a.uid,a.item_id,a.amount,a.real_amount,a.round_amount,a.modi_amount,a.disc_amount,a.srv_amount,a.tax_amount,a.xdisc
+		,c.dept_id,c.price,c.price_per from inv_detail a with (nolock) left join item with (nolock) on a.item_id=item.id left join itemdept c with (nolock) on a.item_id=c.item_id 
+		where a.id=?_inv_id and a.sitem_sub=0 and (a.askdept=0 and ISNULL(item.modi_dept_after_inv, 0)=0) and c.dept_id in (select id from department where id<0 or active=1) 
+		--and not exists (select id from inv_itemdept where id=?_inv_id and Parent_id=a.uid and dept_id<>?_default_itemdept_id) 
+	ENDTEXT 
+	If SQLExec(nhand,ssql, "cun_tmp")<0
+		Aerror(err)
+		frm_wait.Hide
+		Sqlrollback(nhand)
+		SQLSetprop(nhand,"Transactions",1)
+		error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+
+		RETURN -1
+	ENDIF
+	SELECT *,srv_amount as samount FROM cun_tmp ORDER BY uid,dept_id INTO CURSOR cun_tmp READWRITE 
+	UPDATE cun_tmp SET amount=ROUND((real_amount-srv_amount)*price_per/100, 1), samount=ROUND(srv_amount*price_per/100, 1)
+	SELECT uid,MAX(real_amount-srv_amount) as amount,MAX(srv_amount) as samount, SUM(amount) as sum_amount, SUM(samount) as sum_samount FROM cun_tmp GROUP BY uid INTO CURSOR order_itemdept_tmp1
+	SCAN 
+		IF amount<>sum_amount OR samount<>sum_samount 
+			SELECT TOP 1 uid FROM cun_tmp WHERE uid=order_itemdept_tmp1.uid Order By amount Desc  Into Cursor cun_tmp1
+			UPDATE cun_tmp SET amount=amount+order_itemdept_tmp1.amount-order_itemdept_tmp1.sum_amount, samount=samount+order_itemdept_tmp1.samount-order_itemdept_tmp1.sum_samount WHERE uid=cun_tmp1.uid 
+			SELECT order_itemdept_tmp1
+		ENDIF 
+	ENDSCAN 
+	USE IN SELECT("order_itemdept_tmp1")
+	USE IN SELECT("cun_tmp1")
+	
+	SELECT cun_tmp
+	SCAN 
+		TEXT TO ssql TEXTMERGE NOSHOW 
+			INSERT INTO inv_itemdept (id,parent_id,item_id,dept_id,amount,srvamt) VALUES (?_inv_id,?cun_tmp.uid,?cun_tmp.item_id,?cun_tmp.dept_id,?cun_tmp.amount,?cun_tmp.samount)
+		ENDTEXT 
+		IF RECNO("cun_tmp")=1
+			*ssql = "delete from inv_itemdept where id=?_inv_id" + CHR(13) + ssql 
+		ENDIF 
+		If SQLExec(nhand,ssql)<0
+			Aerror(err)
+			frm_wait.Hide
+			Sqlrollback(nhand)
+			SQLSetprop(nhand,"Transactions",1)
+			error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+
+			RETURN -1
+		Endif
+	ENDSCAN 
+ENDIF 
+RETURN 1
 
 ENDFUNC 
