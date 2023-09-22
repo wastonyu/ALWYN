@@ -5,7 +5,7 @@
 
 FUNCTION export_to_pdf_creator
 LPARAMETERS cCursor, _tmpfrxname
-
+ 
 
 * ·sª©¥» pdf creator ¥i©T©w output path & file name
 * ©w¬° d:\pos6\pdf_export.pdf
@@ -1515,16 +1515,17 @@ IF used("message_tmp")
 
 			If !Empty(_mess_cn) And !Empty(_mess_en)
 				Local csql
-				=SQLExec(nhand, "select MAX(id) as maxid from message","cr9")
+				=SQLExec(nhand, "select MAX(id) as maxid, MAX(updateno) as maxupdateno from message","cr9")
 
 				If Isnull(cr9.maxid)
 					_id = 1
 				Else
 					_id = cr9.maxid + 1
-				Endif
+				ENDIF
+				_maxupdateno = NVL(cr9.maxupdateno, 0) + 1
 				Use In cr9
 
-				csql="insert into MESSAGE (id, m_code,message_cn,message_en) values (?_id, ?_m_code,?_mess_cn,?_mess_en)"
+				csql="insert into MESSAGE (id, m_code,message_cn,message_en, updateno) values (?_id, ?_m_code,?_mess_cn,?_mess_en, ?_maxupdateno)"
 				If SQLExec(nhand,csql)<0
 					Aerror(err)
 
@@ -4733,10 +4734,15 @@ Endif
 
 Local _Print_type,_cItem_amt
 
-If 	Lower(cdbf)="cun_modi_tmp" And Vartype(__kit_modi_print_langue)#"U"		&&2009.11.16 ¯S§O³B²z¥´¦L¤º®e¿ï¶µ
+&&Lihong 2023.08.30 ¼p©Ð³æ¯S§O³B²z¬O§_«ö¼p©Ð¦W¥´¦L
+&&Lihong 2023.08.30 If 	Lower(cdbf)="cun_modi_tmp" And Vartype(__kit_modi_print_langue)#"U"		&&2009.11.16 ¯S§O³B²z¥´¦L¤º®e¿ï¶µ
+*__kit_modi_print_desckit=.T.
+IF _slip=.F. AND (Lower(cdbf)="cun_modi_tmp" OR Lower(cdbf)="item_move_tmp") And Vartype(__kit_modi_print_langue)#"U" &&And VARTYPE(__kit_modi_print_desckit)#"U" AND __kit_modi_print_desckit
+	*_Print_type="kit"
+	*ENDIF 
 
 	_Print_type=Lower(__kit_modi_print_langue)
-
+	
 Else
 
 
@@ -6299,7 +6305,7 @@ If Vartype(__slip_print_on_dept)#"U" And __slip_print_on_dept		&&¦pªG¤Wµæ¯È«ö³¡ª
 	
 	*SELECT RECNO() as sn,* FROM itemdept_tmp ORDER BY sn DESC INTO CURSOR itemdept_tmp 
 	UPDATE a SET a.dept_id = NVL(b.dept_id,0) from slip_itm_tmp a left join itemdept_tmp b on a.item_id=b.item_id WHERE a.parent_id=0
-	UPDATE a SET a.dept_id = NVL(b.dept_id,0) from slip_itm_tmp a left join slip_itm_tmp b on INT(a.uid)=b.uid WHERE a.parent_id<>0
+	UPDATE a SET a.dept_id = NVL(b.dept_id,0) from slip_itm_tmp a left join slip_itm_tmp b on a.parent_id=b.uid WHERE a.parent_id<>0 &&on INT(a.uid)=b.uid
 	SELECT * FROM slip_itm_tmp Order By dept_id,uid,item_code Into Cursor slip_itm_tmp
 
 Else
@@ -7352,8 +7358,11 @@ UPDATE order_itemlist_tmp SET disc=.f. WHERE price<0
 
 &&Lihong 2022.11.28 ³Ì§C ¥[¦¬ªA°È¶O
 IF VARTYPE(_inv_srv_type)="N"
+	&&Lihong 2023.08.16 
+	UPDATE order_itemlist_tmp SET srv_per_org=NVL(srv_per,0) WHERE (item_id>0 OR item_id=-3) AND ISNULL(srv_per_org)  
+	
 	UPDATE order_itemlist_tmp SET srv_per=IIF(VARTYPE(_inv_srv_type)="N",IIF(_inv_srv_type=0,srv_per_org + _inv_srv_perc,MAX(srv_per_org,_inv_srv_perc)),srv_per_org) ;
-	WHERE (item_id>0 OR item_id=-3) AND !ISNULL(srv_per_org) 
+	WHERE (item_id>0 OR item_id=-3) AND !ISNULL(srv_per_org)  
 ENDIF 
 
 Select item_disc_tmp 		&&§R°£¤£¦X­n¨Dªº¶µ¥Ø§é¦©
@@ -7397,7 +7406,7 @@ Update order_tax_tmp Set amount=0		&&´_¦ì
 IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
 	Update order_itemlist_tmp Set srv_amount= Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount)-disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)*srv_per/100)
 ELSE 
-	Update order_itemlist_tmp Set srv_amount= Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount)-disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)	*srv_per/100)  WHERE  askdept=.f.  &&§é¦©«áªA°È¶O(¸òsetting) 
+	Update order_itemlist_tmp Set srv_amount= Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount)-disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)	*srv_per/100)  &&Lihong 2023.08.16 WHERE  askdept=.f.  &&§é¦©«áªA°È¶O(¸òsetting) 
 ENDIF 
 *!*	IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
 *!*		Update order_itemlist_tmp Set srv_amount= Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount)-disc_amount)*IIF(VARTYPE(_inv_srv_type)="N",IIF(_inv_srv_type=0,srv_per + _inv_srv_perc,MAX(srv_per,_inv_srv_perc)),srv_per)/100,;
@@ -7567,7 +7576,7 @@ Do Whil !Eof()
 
 	Endif
 
-	IF    askdept=.f. OR VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
+	&&Lihong 2023.08.16 IF askdept=.f. OR VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
 	
 		
 		&&Lihong 2022.11.28 ³Ì§C ¥[¦¬ªA°È¶O
@@ -7592,7 +7601,7 @@ Do Whil !Eof()
 		
 		ENDIF
 
-	ENDIF
+	&&Lihong 2023.08.16 ENDIF
 
 	
 	check_item_disc(order_itemlist_tmp.uid)						&&¶µ¥Ø§é¦©ÀË¬d
@@ -8316,33 +8325,39 @@ SCAN
 
 		SELECT order_dept_tmp 
 		SCAN FOR  parent_id=check_itemdept_tmp.uid
-		
-		IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
-			REPLACE   srvamt  WITH 	 ROUND(IIF(lnDept_Srvamt=0, 0.00, lnItem_SrvAmt * srvamt /lnDept_Srvamt) , 1) &&Lihong 2022.05.27 §ï¬°1¦ì¤p¼Æ
-		ELSE 
-			REPLACE   srvamt  WITH 	 ROUND(IIF(lnDept_Srvamt=0, 0.00, lnDept_Srvamt  * srvamt /lnDept_Srvamt) , 1) &&Lihong 2022.01.19 ¼W¥[IIF(lnDept_Srvamt=0, 0.00 &&Lihong 2022.05.27 §ï¬°1¦ì¤p¼Æ
-		ENDIF 	
-	
+
+&&Lihong 2023.08.16		
+*!*			IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
+*!*				REPLACE   srvamt  WITH 	 ROUND(IIF(lnDept_Srvamt=0, 0.00, lnItem_SrvAmt * srvamt /lnDept_Srvamt) , 1) &&Lihong 2022.05.27 §ï¬°1¦ì¤p¼Æ
+*!*			ELSE 
+*!*				REPLACE   srvamt  WITH 	 ROUND(IIF(lnDept_Srvamt=0, 0.00, lnDept_Srvamt  * srvamt /lnDept_Srvamt) , 1) &&Lihong 2022.01.19 ¼W¥[IIF(lnDept_Srvamt=0, 0.00 &&Lihong 2022.05.27 §ï¬°1¦ì¤p¼Æ
+*!*			ENDIF 	
+			REPLACE   srvamt  WITH 	 ROUND(IIF(lnDept_Srvamt=0, 0.00, lnItem_SrvAmt * srvamt /lnDept_Srvamt) , 1)
 		ENDSCAN
 
 		SELECT order_dept_tmp 	
 		SUM srvamt  TO lnSrv  FOR  parent_id=check_itemdept_tmp.uid
-		
-		IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
-			IF  lnItem_SrvAmt <>	lnSrv  
+
+&&Lihong 2023.08.16		
+*!*			IF VARTYPE(__change_item_set_detail)#"U" AND __change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
+*!*				IF  lnItem_SrvAmt <> lnSrv  
+*!*					SELECT TOP 1 dept_id FROM order_dept_tmp  WHERE parent_id=check_itemdept_tmp.uid  ORDER BY amount  DESC INTO CURSOR cun_tmp
+*!*					UPDATE  order_dept_tmp  SET  srvamt =srvamt + (lnItem_SrvAmt - lnSrv ) WHERE dept_id=cun_tmp.dept_id  AND  parent_id=check_itemdept_tmp.uid 
+*!*				ENDIF
+*!*			ELSE 
+*!*				IF  lnDept_Srvamt <> lnSrv  
+*!*				
+*!*					SELECT TOP 1 dept_id FROM order_dept_tmp  WHERE parent_id=check_itemdept_tmp.uid  ORDER BY amount  DESC INTO CURSOR cun_tmp
+*!*					
+*!*					UPDATE  order_dept_tmp  SET  srvamt =srvamt + (lnDept_Srvamt - lnSrv ) WHERE dept_id=cun_tmp.dept_id  AND  parent_id=check_itemdept_tmp.uid 
+*!*					
+*!*				
+*!*				ENDIF
+*!*			ENDIF 
+			IF  lnItem_SrvAmt <> lnSrv  
 				SELECT TOP 1 dept_id FROM order_dept_tmp  WHERE parent_id=check_itemdept_tmp.uid  ORDER BY amount  DESC INTO CURSOR cun_tmp
 				UPDATE  order_dept_tmp  SET  srvamt =srvamt + (lnItem_SrvAmt - lnSrv ) WHERE dept_id=cun_tmp.dept_id  AND  parent_id=check_itemdept_tmp.uid 
 			ENDIF
-		ELSE 
-			IF  lnDept_Srvamt  <>	lnSrv  
-			
-				SELECT TOP 1 dept_id FROM order_dept_tmp  WHERE parent_id=check_itemdept_tmp.uid  ORDER BY amount  DESC INTO CURSOR cun_tmp
-				
-				UPDATE  order_dept_tmp  SET  srvamt =srvamt + (lnDept_Srvamt - lnSrv ) WHERE dept_id=cun_tmp.dept_id  AND  parent_id=check_itemdept_tmp.uid 
-				
-			
-			ENDIF
-		ENDIF 
 
 		
 	
@@ -8514,7 +8529,7 @@ Scan
 		IF VARTYPE(m.__change_item_set_detail)#"U" AND m.__change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
 			Update order_itemlist_tmp Set srv_amount=Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount) - disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)	*srv_per/100) Where uid=_NitemId AND srv_free=.F. 
 		ELSE 
-			Update order_itemlist_tmp Set srv_amount=Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount) - disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)	*srv_per/100) Where uid=_NitemId AND srv_free=.F. AND askdept=.f.  &&§é¦©«áªA°È¶O(¸òsetting) 
+			Update order_itemlist_tmp Set srv_amount=Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount) - disc_amount)*srv_per/100,Iif(orgsrv,price0*qty,amount)	*srv_per/100) Where uid=_NitemId AND srv_free=.F. &&Lihong 2023.08.16 AND askdept=.f.  &&§é¦©«áªA°È¶O(¸òsetting) 
 		ENDIF 
 *!*			IF VARTYPE(m.__change_item_set_detail)#"U" AND m.__change_item_set_detail &&Lihong 2022-01-12 ®MÀ\¤l¶µ´À´«
 *!*				Update order_itemlist_tmp Set srv_amount=Iif(__disc_srv,(Iif(orgsrv,price0*qty,amount) - disc_amount)*IIF(VARTYPE(_inv_srv_type)="N",IIF(_inv_srv_type=0,srv_per + _inv_srv_perc,MAX(srv_per,_inv_srv_perc)),srv_per)/100,;
@@ -10846,19 +10861,31 @@ Scan
 *SELECT count(0) as qty,SUM(invamt) as amt FROM cun_tmp WHERE fastfood  AND fastfood_info_id=fastfood_info_tmp.id INTO CURSOR fastinfo_tmp
 
 	Select cun_tmp11
-	Count To _fastfood_qty For fastfood  And fastfood_info_id=fastfood_info_tmp.Id
-
+	IF VARTYPE(__fastfood_analysis_split_line)#"U" AND __fastfood_analysis_split_line
+		Count To _fastfood_qty For fastfood AND NVL(is_web_inv,.F.)=.F. And fastfood_info_id=fastfood_info_tmp.Id 
+	ELSE 
+		Count To _fastfood_qty For fastfood And fastfood_info_id=fastfood_info_tmp.Id
+	ENDIF 
 	If _fastfood_qty>0
-
-		Sum invamt To _fastfood_amt For fastfood  And fastfood_info_id=fastfood_info_tmp.Id
+		IF VARTYPE(__fastfood_analysis_split_line)#"U" AND __fastfood_analysis_split_line
+			Sum invamt To _fastfood_amt For fastfood AND NVL(is_web_inv,.F.)=.F.  And fastfood_info_id=fastfood_info_tmp.Id
+		ELSE 
+			Sum invamt To _fastfood_amt For fastfood And fastfood_info_id=fastfood_info_tmp.Id
+		ENDIF 
 		Insert Into cln_tmp13 (r_id,descdisp,qty,amt) Values (13,Iif(_system_langue="CN",Trim(fastfood_info_tmp.desccn),Trim(fastfood_info_tmp.Descen)),_fastfood_qty,_fastfood_amt )
-
-
 
 	Endif
 
-
 Endscan
+IF VARTYPE(__fastfood_analysis_split_line)#"U" AND __fastfood_analysis_split_line
+	Select cun_tmp11
+	Count To _fastfood_qty For fastfood AND NVL(is_web_inv,.F.)=.T. 
+	If _fastfood_qty>0
+		Sum invamt To _fastfood_amt For fastfood AND NVL(is_web_inv,.F.)=.T.
+		lcmsg_fastfood = getmessage("_fastfood_online") &&½u¤W¥~½æ Online Take Away
+		Insert Into cln_tmp13 (r_id,descdisp,qty,amt) Values (13,lcmsg_fastfood,_fastfood_qty,_fastfood_amt )
+	ENDIF 
+ENDIF 
 
 Select cln_tmp13
 
@@ -10954,12 +10981,25 @@ If _show_section	&& 2011.07.28  ®É¬q¤ÀªR
 		Replace amt With _amt,pplcnt With Int(_ppl),srvamt  WITH _srvamt 
 	Endscan
 	Select cun_tmp11
-	Sum invamt,pplcnt,srvamt To _amt,_ppl,_srvamt For fastfood=.T. 
-	lcmsg_fastfood = getmessage("_fastfood")
+	IF VARTYPE(__fastfood_analysis_split_line)#"U" AND __fastfood_analysis_split_line
+		Sum invamt,pplcnt,srvamt To _amt,_ppl,_srvamt For fastfood=.T. AND NVL(is_web_inv,.F.)=.F.
+		lcmsg_fastfood = getmessage("_fastfood_offline") &&½u¤U¥~½æ Offline Take Away
+	ELSE 
+		Sum invamt,pplcnt,srvamt To _amt,_ppl,_srvamt For fastfood=.T.
+		lcmsg_fastfood = getmessage("_fastfood")
+	ENDIF 
 	Select cln_tmp16
 	Insert Into cln_tmp16 (r_id,descdisp,s_from,s_to) Values (16,lcmsg_fastfood,"","") 
 	Replace amt With _amt,pplcnt With Int(_ppl),srvamt  WITH _srvamt 
-		
+	
+	IF VARTYPE(__fastfood_analysis_split_line)#"U" AND __fastfood_analysis_split_line
+		Select cun_tmp11
+		Sum invamt,pplcnt,srvamt To _amt,_ppl,_srvamt For fastfood=.T. AND NVL(is_web_inv,.F.)=.T.
+		lcmsg_fastfood = getmessage("_fastfood_online") &&½u¤W¥~½æ Online Take Away
+		Select cln_tmp16
+		Insert Into cln_tmp16 (r_id,descdisp,s_from,s_to) Values (16,lcmsg_fastfood,"","") 
+		Replace amt With _amt,pplcnt With Int(_ppl),srvamt  WITH _srvamt 
+	ENDIF 
 
 	ELSE 
 	
@@ -11274,36 +11314,39 @@ Endif
 cnotice=Iif(GL_training,getmessage("_training"),"")
 
 *-------------------------------------------------------------------------
-Select cln_tmp 						&&«Ø¥ßÃöÁp,¦hDETAIL³øªí¥²¶·
-Set Relation To r_id Into cln_tmp1
-Set Relation To r_id Into cln_tmp2 Additive
-Set Relation To r_id Into cln_tmp3 Additive
-Set Relation To r_id Into cln_tmp4 Additive
-Set Relation To r_id Into cln_tmp5 Additive
-Set Relation To r_id Into cln_tmp6 Additive
-Set Relation To r_id Into cln_tmp7 Additive
-Set Relation To r_id Into cln_tmp8 Additive
-Set Relation To r_id Into cln_tmp9 Additive
-Set Relation To r_id Into cln_tmp10 Additive
-Set Relation To r_id Into cln_tmp11 Additive
-Set Relation To r_id Into cln_tmp12 Additive
-Set Relation To r_id Into cln_tmp13 Additive
-Set Relation To r_id Into cln_tmp14 Additive
-Set Relation To r_id Into cln_tmp15 Additive
-Set Relation To r_id Into cln_tmp16 Additive
-Set Relation To r_id Into cln_tmp17 Additive
-Set Relation To r_id Into cln_tmp18 Additive
-Set Relation To r_id Into cln_tmp19 Additive
-Set Relation To r_id Into cln_tmp20 Additive
-Set Relation To r_id Into cln_tmp21 Additive
-Set Relation To r_id Into cln_tmp22 Additive
-*IF _Memb_Record
-	Set Relation To r_id Into cln_tmp23 ADDITIVE &&Lihong 2021.12.15 ·|­û®ø¶O°O¿ý
-*ENDIF 
-&&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
-Set Relation To r_id Into cln_tmp24 ADDITIVE
-Set Relation To r_id Into cln_tmp25 ADDITIVE
+*!*	Select cln_tmp 						&&«Ø¥ßÃöÁp,¦hDETAIL³øªí¥²¶·
+*!*	Set Relation To r_id Into cln_tmp1
+*!*	Set Relation To r_id Into cln_tmp2 Additive
+*!*	Set Relation To r_id Into cln_tmp3 Additive
+*!*	Set Relation To r_id Into cln_tmp4 Additive
+*!*	Set Relation To r_id Into cln_tmp5 Additive
+*!*	Set Relation To r_id Into cln_tmp6 Additive
+*!*	Set Relation To r_id Into cln_tmp7 Additive
+*!*	Set Relation To r_id Into cln_tmp8 Additive
+*!*	Set Relation To r_id Into cln_tmp9 Additive
+*!*	Set Relation To r_id Into cln_tmp10 Additive
+*!*	Set Relation To r_id Into cln_tmp11 Additive
+*!*	Set Relation To r_id Into cln_tmp12 Additive
+*!*	Set Relation To r_id Into cln_tmp13 Additive
+*!*	Set Relation To r_id Into cln_tmp14 Additive
+*!*	Set Relation To r_id Into cln_tmp15 Additive
+*!*	Set Relation To r_id Into cln_tmp16 Additive
+*!*	Set Relation To r_id Into cln_tmp17 Additive
+*!*	Set Relation To r_id Into cln_tmp18 Additive
+*!*	Set Relation To r_id Into cln_tmp19 Additive
+*!*	Set Relation To r_id Into cln_tmp20 Additive
+*!*	Set Relation To r_id Into cln_tmp21 Additive
+*!*	Set Relation To r_id Into cln_tmp22 Additive
+*!*	*IF _Memb_Record
+*!*		Set Relation To r_id Into cln_tmp23 ADDITIVE &&Lihong 2021.12.15 ·|­û®ø¶O°O¿ý
+*!*	*ENDIF 
+*!*	&&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
+*!*	Set Relation To r_id Into cln_tmp24 ADDITIVE
+*!*	Set Relation To r_id Into cln_tmp25 ADDITIVE
 
+
+&&Lihong 2023.09.07 summary
+_llclean_report_new = .F.
 Do Case
 
 	Case  "redant"$Lower(__special_customer) OR LOWER(__special_customer)=="red_ant2022"
@@ -11403,7 +11446,7 @@ Do Case
 		UPDATE a SET a.pay_Times=b.dtmin, a.pay_Timee=b.dtmax from cln_tmp a left join cun_tmp_tmp b on a.r_id==b.r_id WHERE a.r_id>100 
 		SELECT cln_tmp
 		LOCATE FOR r_id=16
-		IF FOUND() &&_MS_reprint_report=.T. from ³øªí¥\¯à ¤~¨Ï¥Î³o­Ó­È
+		IF FOUND() AND RECCOUNT("cun_tmp_tmp")>0 &&_MS_reprint_report=.T. from ³øªí¥\¯à ¤~¨Ï¥Î³o­Ó­È
 			SELECT MIN(dtmin) as dtmin, MAX(dtmax) as dtmax FROM cun_tmp_tmp INTO CURSOR cun_tmp_tmp
 			SELECT cln_tmp
 			REPLACE pay_Times WITH cun_tmp_tmp.dtmin, pay_Timee WITH cun_tmp_tmp.dtmax FOR r_id=16 IN cln_tmp
@@ -11446,13 +11489,114 @@ Do Case
 	Otherwise
 
 		tmpfrx = "report\clean"
-		
+		IF VARTYPE(__cln_report_file_name)#"U" 
+			IF EMPTY(__cln_report_file_name) AND FILE("report\clean_2023.frx") 
+				tmpfrx = "report\clean_2023"
+				_llclean_report_new = .T.
+			ENDIF 
+			IF !EMPTY(__cln_report_file_name) AND !JUSTSTEM(__cln_report_file_name)=="clean" AND FILE("report\"+JUSTSTEM(__cln_report_file_name)+".frx") 
+				tmpfrx = "report\"+JUSTSTEM(__cln_report_file_name)
+				_llclean_report_new = .T.
+			ENDIF 
+		ENDIF 
 		&&Lihong 2023.01.19 cln by user
 		IF _clean_reprint AND Upper(__checked_method)="USER"
 			*_Cashier = cun_tmp_befor_delete_0pay.adduser
 		ENDIF 
 Endcase
 USE IN SELECT("cun_tmp_befor_delete_0pay")
+
+*-------------------------------------------------------------------------
+IF _llclean_report_new = .F.
+Select cln_tmp 						&&«Ø¥ßÃöÁp,¦hDETAIL³øªí¥²¶·
+Set Relation To r_id Into cln_tmp1
+Set Relation To r_id Into cln_tmp2 Additive
+Set Relation To r_id Into cln_tmp3 Additive
+Set Relation To r_id Into cln_tmp4 Additive
+Set Relation To r_id Into cln_tmp5 Additive
+Set Relation To r_id Into cln_tmp6 Additive
+Set Relation To r_id Into cln_tmp7 Additive
+Set Relation To r_id Into cln_tmp8 Additive
+Set Relation To r_id Into cln_tmp9 Additive
+Set Relation To r_id Into cln_tmp10 Additive
+Set Relation To r_id Into cln_tmp11 Additive
+Set Relation To r_id Into cln_tmp12 Additive
+Set Relation To r_id Into cln_tmp13 Additive
+Set Relation To r_id Into cln_tmp14 Additive
+Set Relation To r_id Into cln_tmp15 Additive
+Set Relation To r_id Into cln_tmp16 Additive
+Set Relation To r_id Into cln_tmp17 Additive
+Set Relation To r_id Into cln_tmp18 Additive
+Set Relation To r_id Into cln_tmp19 Additive
+Set Relation To r_id Into cln_tmp20 Additive
+Set Relation To r_id Into cln_tmp21 Additive
+Set Relation To r_id Into cln_tmp22 Additive
+*IF _Memb_Record
+	Set Relation To r_id Into cln_tmp23 ADDITIVE &&Lihong 2021.12.15 ·|­û®ø¶O°O¿ý
+*ENDIF 
+&&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
+Set Relation To r_id Into cln_tmp24 ADDITIVE
+Set Relation To r_id Into cln_tmp25 ADDITIVE
+
+ELSE 
+	&&Lihong 2023.09.07 summary
+	Select cln_tmp
+	Set Relation To
+	SELECT * FROM cln_tmp INTO CURSOR  cln_tmp_old
+	Create Cursor cln_tmp(r_id Int,inv_Id Int,pplcnt N(8,0),payway c(30),amt N(12,2),tips N(12,2), discamt N(12,2),tableno c(10) ;
+	,void_reason c(30) ;
+	,descdisp c(80),qty N(12,2),void_user c(20),void_time c(20),Id Int ;
+	,cln int,crasher c(50),paytimes N(6,0),Changes N(12,2),tamt N(12,2),netamt N(12,2),adduser c(20),istotal L,islocal L,pay_id Int ;
+	,amt2 N(18,4), org_amount n(18,4), discount_amount n(18,4), round_amount n(12,2), real_amount n(18,4), dept_amt N(18,4),srv N(18,4) , s_from c(10),s_to c(10) ;
+	,amtperhead N(12,2) ;
+	,item_code c(10),cate c(50),cate_id int ;
+	,action c(200),Datetime T ;
+	,orgamt N(12,2) ;
+	,inv_no N(10,0),cUser c(20) ;
+	,cardno c(50) ;
+	,srvamt N(12,2) ;
+	,Cnt N(8,0),per N(6,2) ,sTime c(5),eTime c(5) ;
+	,disc_desc c(30) ;
+	,award N(12,2) ,liked_inv_per C(10),liked_amt_per C(10) ;
+	,name_cn C(50), name_en C(50), tel C(50), invamt N(12,2), invamt_noRecharge N(12,2), recharge_amount N(12,2), invcnt int, invcnt_noRecharge int, recharge_count int )
+
+	SELECT cln_tmp_old
+	SCAN 
+		str_cln_tmp_r_id = "cln_tmp" + TRANSFORM(cln_tmp_old.r_id)
+		IF str_cln_tmp_r_id=="cln_tmp6"
+			*SELECT *, amt as amt2 FROM cln_tmp6 INTO CURSOR cln_tmp6 READWRITE 
+		ENDIF 
+		IF RECCOUNT(str_cln_tmp_r_id)>0
+			SELECT cln_tmp 
+			APPEND FROM DBF(str_cln_tmp_r_id)
+		ENDIF 
+		SELECT cln_tmp_old
+*EXIT 
+	ENDSCAN 
+
+	USE IN SELECT("cln_tmp_old")
+	SELECT cln_tmp 
+	*INSERT INTO cln_tmp (r_id ) VALUES (999)
+	SELECT cln_tmp3
+	SUM qty,amt TO _total3_qty, _total3_amt
+	SELECT cln_tmp8
+	SUM qty,amt TO _total8_qty, _total8_amt
+	SELECT cln_tmp17
+	SUM cnt, qty, amt TO _total17_cnt,_total17_qty, _total17_amt
+	SELECT cln_tmp23
+	SUM invcnt_noRecharge, invamt_noRecharge,recharge_count, recharge_amount TO _total23_invcnt_noRecharge,_total23_invamt_noRecharge, _total23_recharge_count, _total23_recharge_amount
+
+	*PUBLIC __chris__void_inv_count , __chris__void_inv_amt
+	*LOCAL __chris_current_select
+	__chris__void_inv_count = 0
+	__chris__void_inv_amt = 0
+	*__chris_current_select = ALIAS()
+	SELECT cln_tmp2
+	COUNT TO __chris__void_inv_count 
+	SUM amt TO __chris__void_inv_amt
+	*SELECT (__chris_current_select)
+	
+ENDIF 
 
 *tmpfrx="d:\clean"
 
@@ -12260,7 +12404,6 @@ _login_user_name+" clearing  "+_cln_amt+CHR(13)+;
 		frm_wait.Hide
 
 
-
 		If  ( Vartype(__special_customer)#"U" And "redant"$__special_customer ) Or __debug_mode
 
 
@@ -12391,7 +12534,7 @@ Endif
 
 
 
-For i=1 To 20
+For i=1 To 26
 	_curs="cln_tmp"+Alltrim(Str(i))
 
 	If Used("&_curs")
@@ -18555,6 +18698,7 @@ IF _new_table_deposit_id>0
 	USE IN SELECT("deposit_pay_tmp")
 	USE IN SELECT("deposit_pay_tmp1")
 ENDIF 
+
 *_new_table_change_payway 
 IF _new_table_deposit_id>0 AND _new_table_deposit_amount>0 AND _new_table_deposit_first
 *_new_table_deposit_use_type = 0
@@ -18710,7 +18854,7 @@ SCAN FOR NVL(is_paid,.F.)=.F.
 
 	If __pay_print_to_local
 		
-		IF RECNO("cr_inv_split_tmp")=1
+		IF VARTYPE(_cash_and_deposit_amt)="U" OR RECNO("cr_inv_split_tmp")=1
 			If gen_local_paylist_data(_inv_id)<0
 
 				Sqlrollback(nhand)
@@ -18719,7 +18863,16 @@ SCAN FOR NVL(is_paid,.F.)=.F.
 				Return -1
 
 			ENDIF
-		
+&&Lihong 2023.09.02 	
+*!*				IF VARTYPE(_cash_and_deposit_amt)#"U"
+*!*					_cust_amt = _cash_and_deposit_amt
+*!*				ELSE
+*!*					_cust_amt = cr_inv_split_tmp.cust_amt
+*!*				ENDIF 
+*!*				&&Lihong 2022.05.01
+*!*				REPLACE paidamt WITH _cust_amt, aa_sub_id WITH lcaa_sub_id IN pay_print_main &&Lihong 2022.08.19 ¤À±b paidamt WITH _payamt aa_sub_id WITH lcaa_sub_id
+		ENDIF 
+			&&Lihong 2023.09.02 
 			IF VARTYPE(_cash_and_deposit_amt)#"U"
 				_cust_amt = _cash_and_deposit_amt
 			ELSE
@@ -18727,7 +18880,6 @@ SCAN FOR NVL(is_paid,.F.)=.F.
 			ENDIF 
 			&&Lihong 2022.05.01
 			REPLACE paidamt WITH _cust_amt, aa_sub_id WITH lcaa_sub_id IN pay_print_main &&Lihong 2022.08.19 ¤À±b paidamt WITH _payamt aa_sub_id WITH lcaa_sub_id
-		ENDIF 
 		&&Lihong 2023.08.04
 		REPLACE oct_remain WITH _oct_remain, oct_card_id WITH _oct_cid, oct_device_id WITH _oct_did IN pay_print_main
 
@@ -19596,6 +19748,7 @@ Endfunc
 **************************
 Function inv_detail_generate
 Lparameters Cprint_type	,_Nid,_Pid,_langue,_reprint,_print_to_local,_Lreprint,_Nvoid_Id	&&cPrint_type ="INV"¬°µo²¼,	"PAY"¬°µ²±b ,_print_to_local ª½±µ¥»¦a¥´¦L¾÷
+
 
 If Vartype(_Nvoid_Id)#"N"		&&¨ú®øµæ¦¡  void_id
 	_Nvoid_Id=0
@@ -21441,6 +21594,8 @@ Endif
 _outlet_id=cun_tmp1.outlet_Id
 _table_name=Trim(cun_tmp1.Name)
 
+_lcinv_aa_sub_id = IIF(VARTYPE(_inv_print_sub_id)="C", _inv_print_sub_id, "")
+
 *If Empty(__Inv_direct_printer)	Or Isnull(__Inv_direct_printer)	&&¬O§_ªö¥Îµo²¼ª½¦L¥´¦L¾÷(¤£¸gprint_server)
 
 
@@ -21494,11 +21649,11 @@ If __inv_print_to_local
 
 
 	Insert Into inv_print_main (inv_Id,tableno,pplcnt,Printer,def_printer,act_printer,printed,sendtime,printtime,username,station_id,langue,fastfood,training,tel,address,;
-		amount,discamt,itemdiscamt,srvamt,taxamt,rndamt,invamt,begintime,paidtime,member_name,member_no,void,reprint,link_table,remark,points,points_used,points_remain,inv_remark,inv_remark2);
+		amount,discamt,itemdiscamt,srvamt,taxamt,rndamt,invamt,begintime,paidtime,member_name,member_no,void,reprint,link_table,remark,points,points_used,points_remain,inv_remark,inv_remark2,aa_sub_id);
 		values (_invID, _table_info, cun_tmp2.pplcnt, _printer, _printer,'', __inv_print_to_local, Datetime(),Datetime(), _login_user_name, _station_id, _clangue, cun_tmp2.fastfood, GL_training, cun_tmp2.tel, _addr,;
 		cun_tmp2.amount, cun_tmp2.discamt, cun_tmp2.itemdiscamt, cun_tmp2.srvamt, cun_tmp2.taxamt, cun_tmp2.rndamt, cun_tmp2.invamt,;
 		cun_tmp2.begintime, cun_tmp2.paidtime, cun_tmp2.member_name, cun_tmp2.member_id, cun_tmp2.void, _Lreprint_noPay, _link_table,;
-		_mem_remark, _inv_points, _inv_points_used, _inv_points_remain,_inv_remark,_inv_remark2)
+		_mem_remark, _inv_points, _inv_points_used, _inv_points_remain,_inv_remark,_inv_remark2,_lcinv_aa_sub_id)
 
 
 Else
@@ -21509,11 +21664,11 @@ Else
 	ENDIF 
 
 	ssql="insert into inv_print_main (pid,inv_Id,tableno,pplcnt,printer,def_printer,act_printer,printed,sendtime,printtime,username,station_id,langue,fastfood,training,tel,address,"+;
-		"amount,discamt,itemdiscamt,srvamt,taxamt,rndamt,invamt,begintime,paidtime,member_name,member_no,void,reprint,link_table,remark,points,points_used,points_remain,inv_remark,inv_remark2)"+;
+		"amount,discamt,itemdiscamt,srvamt,taxamt,rndamt,invamt,begintime,paidtime,member_name,member_no,void,reprint,link_table,remark,points,points_used,points_remain,inv_remark,inv_remark2,aa_sub_id)"+;
 		" values (?_pid,?_invID,?_table_info,?cun_tmp2.pplcnt,?_printer,?_printer,'',?_llprinted,?DATETIME(),'',?_login_user_name,?_station_id,?_clangue,?cun_tmp2.fastfood,?GL_training,?cun_tmp2.tel,?_addr,"+;
 		"?cun_tmp2.amount,?cun_tmp2.discamt,?cun_tmp2.itemdiscamt,?cun_tmp2.srvamt,?cun_tmp2.taxamt,?cun_tmp2.rndamt,?cun_tmp2.invamt,"+;
 		"?cun_tmp2.begintime,?cun_tmp2.paidtime,?cun_tmp2.member_name,?cun_tmp2.member_id,?cun_tmp2.void,?_Lreprint_noPay,?_link_table,"+;
-		"?_mem_remark,?_inv_points,?_inv_Points_used,?_inv_points_remain,?_inv_remark,?_inv_remark2)"
+		"?_mem_remark,?_inv_points,?_inv_Points_used,?_inv_points_remain,?_inv_remark,?_inv_remark2,?_lcinv_aa_sub_id)"
 
 
 
@@ -22136,6 +22291,7 @@ ENDIF
 *IF !EMPTY(FIELD("deposit_amt","cun_tmp2"))
 	_deposit_apply = NVL(deposit_tmp.amount,0)
 	_remaining_balance = _totalamt - _deposit_apply
+	lninv_remain_deposit_apply = IIF(_remaining_balance<0, 0, _remaining_balance)
 	_inv_forfeiture = (_totalamt=NVL(deposit_tmp.invamt,0) and YEAR(deposit_tmp.paidtime)>2000)
 	IF _deposit_apply<>0 and _remaining_balance<0 AND _inv_forfeiture=.F.
 		_totalamt = _totalamt + ABS(_remaining_balance)
@@ -22143,7 +22299,21 @@ ENDIF
 	ENDIF 
 *ENDIF 
 USE IN SELECT("deposit_tmp")
+_lcinv_aa_sub_id = IIF(!EMPTY(FIELD("aa_sub_id", "cun_tmp2")), NVL(cun_tmp2.aa_sub_id, ""), "")
+IF !EMPTY(_lcinv_aa_sub_id)
+	IF SQLEXEC(nhand,"select cust_amt from inv_split with (nolock) where inv_id=?_inv_id and sub_id=?_lcinv_aa_sub_id","deposit_tmp")<0
+		Aerror(err)
+		frm_wait.Hide
+		error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+		_gbk_langue=.F.
 
+		Return -1	
+	ENDIF
+	IF RECCOUNT("deposit_tmp")>0
+		lninv_remain_deposit_apply = deposit_tmp.cust_amt 
+	ENDIF 
+	USE IN SELECT("deposit_tmp")
+ENDIF 
 
 _amtperhead=Iif(__print_perhead,Alltrim(Str(_totalamt/cun_tmp2.pplcnt,10,2)),"")	&&¤H§¡®ø¶O
 
@@ -22599,8 +22769,25 @@ Endif
 
 
 *************************
-qrcode_file=""
+&&Lihong 2023.08.23 
+IF VARTYPE(__inv_show_pay_barcode)#"U" AND __inv_show_pay_barcode
+	TEXT TO ssql TEXTMERGE NOSHOW 
+	SELECT b.id from inv a with(nolock) left join order_main b with(nolock) on a.id=b.inv_id where a.id=?_inv_id and a.tableno<>'' and a.askno='' and year(a.paidtime)<=2000 
+	ENDTEXT 
+	If SQLExec(nhand,ssql,"cun_tmp")<0
+		Aerror(err)
+		frm_wait.Hide
+		error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+		write_log(57,"tbl:"+_tableno+" inv:"++Alltrim(Str(_inv_id))+"-->inv_prt_barcode sql error")		&&°O¿ý¾Þ§@
+		Return -1
+	ENDIF
+	IF RECCOUNT("cun_tmp")>0 AND !ISNULL(cun_tmp.id)
+		_barcodetxt_inv=Padl(Alltrim(Str(cun_tmp.id)),6,"0")
+		_barcode_inv="*"+_barcodetxt_inv+"*" 
+	ENDIF 
+ENDIF 
 
+qrcode_file=""
 IF VARTYPE(__crm_app_active)#"U" AND __crm_app_active	&&¥Í¦¨QRCODE 
 
 
@@ -22639,7 +22826,7 @@ QRcode_file_inv = ""
 IF VARTYPE(__inv_prt_qrcode_format)#"U" AND !EMPTY(__inv_prt_qrcode_format)	&&¥Í¦¨QRCODE 
 	lcQRcode = __inv_prt_qrcode_format
 
-	*{inv_no}{inv_qty}{inv_amt}{inv_paidtime}{inv_belongdate}
+	*{inv_no}{inv_qty}{inv_amt}{inv_paidtime}{inv_belongdate}{inv_remain}
 	TEXT TO ssql TEXTMERGE NOSHOW 
 	select invamt,qty=(select SUM(qty) as qty from inv_detail where id=?_inv_id and item_id<>-3 and item_id<>0),belongdate as belongdate_org,paidtime as paidtime_org,
 	<<IIF(VARTYPE(__inv_prt_qrcode_date_format)#"U" AND !EMPTY(__inv_prt_qrcode_date_format), "format(belongdate, ?__inv_prt_qrcode_date_format) as belongdate","belongdate")>>,
@@ -22686,6 +22873,7 @@ IF VARTYPE(__inv_prt_qrcode_format)#"U" AND !EMPTY(__inv_prt_qrcode_format)	&&¥Í
 	IF Year(cun_tmp.belongdate_org)<=2000
 		inv_belongdate=IIF(VARTYPE(__inv_prt_qrcode_date_format)="U" OR EMPTY(__inv_prt_qrcode_date_format), DTOC(cun_tmp.printdate), TRIM(STRCONV(cun_tmp.printdate, 6)))
 	ENDIF 
+	inv_remain = IIF(VARTYPE(__inv_prt_qrcode_amt_x100)#"U" and __inv_prt_qrcode_amt_x100, TRANSFORM(FLOOR(lninv_remain_deposit_apply*100)), allt(TRANSFORM(lninv_remain_deposit_apply,"999,999,999.99")) ) 
 	
 	TRY 
 		lcQRcode = TEXTMERGE(lcQRcode, .F., "{", "}")
@@ -23472,7 +23660,7 @@ IF _deposit_pay_print=.F. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 *!*				Endif
 *!*			ENDIF 
 
-		_member_name=Iif(Isnull(pay_cun_tmp.name_cn),"", getmessage("_member")+":"+Trim(pay_cun_tmp.name_cn) )
+		_member_name=Iif(Isnull(pay_cun_tmp.name_cn),"", getmessage("_member")+":"+Trim(.name_cn) )
 		_member_cardno=Iif( Isnull(pay_cun_tmp.cardno),"",  getmessage("_cardno")+":"+Trim(pay_cun_tmp.cardno) )
 		*&&Lihong 2023.04.06 _member_tel= Iif(Isnull(pay_cun_tmp.tel) Or Empty(pay_cun_tmp.tel),"",getmessage("_tel")+Trim(pay_cun_tmp.tel))				&&·|­û¹q¸Ü
 		_member_tel= Iif(Isnull(pay_cun_tmp.memb_tel) Or Empty(pay_cun_tmp.memb_tel),"",getmessage("_tel")+Trim(pay_cun_tmp.memb_tel))
@@ -23541,7 +23729,6 @@ IF VARTYPE(_invinfo_reprint_paylist)#"U"		&&Àç·~¸ê®Æ¤¤­«¦L¥I´Ú²M³æ
 
 ENDIF	
 
-
 IF VARTYPE(_deposit_call_cashier_status)#"U" AND _deposit_call_cashier_status = 2		&&¤@¦¸©Ê­qª÷°h´Ú &&¤@¦¸©Ê­qª÷°h´Ú By Waston 31/08/2023
 
 	cNotice = "****" + getmessage("_deposit_refund") +" ****"
@@ -23549,7 +23736,6 @@ IF VARTYPE(_deposit_call_cashier_status)#"U" AND _deposit_call_cashier_status = 
 
 
 ENDIF	
-
 
 _deleted_paylist=Iif(pay_print_tmp1.void,getmessage("_deleted_paylist"),"")				&&¤w§R°£¥I´Ú²M³æ
 
@@ -23567,7 +23753,7 @@ _lbinvno=getmessage("_invno")			&&µo²¼¸¹½X
 IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 	_lbpaylist=getmessage("_deposit_slip") &&­qª÷³æ Deposit Slip &&_lbpaylist+"("+getmessage("_deposit")+")"
 	_lbtableNo=getmessage("lbl_contact")
-	_lbinvno=getmessage("lbl_deposit_no") 
+	_lbinvno=getmessage("lbl_deposit_no")
 	_barcodetxt  = "DET"+Iif(_inv_id<=9999999,Replicate("0",7-Len(Alltrim(Str(_inv_id))))+Alltrim(Str(_inv_id)),Alltrim(Str(_inv_id))) &&_cinvno
 	_barcode = "*"+_barcodetxt+"*"
 	_barcodetxt = Alltrim(Str(_inv_id))
@@ -23579,8 +23765,6 @@ IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 		_lbpaylist=getmessage("_refund_slip")
 		_lbinvno=getmessage("_deposit_refund") + getmessage("_order_no")
 	ENDIF 
-
-	
 ENDIF 
 _lbusername=getmessage("_cashier")	&&Àç·~­û
 _lbpayway=getmessage("_payway")			&&¥I´Ú¤è¦¡
@@ -23600,12 +23784,7 @@ _lbtotalamt=getmessage("_totalamt")	&&Á`ª÷ÃB
 _lbInvAmt=getmessage("_inv_amt")+Iif(!Empty( __local_CURRENCY),"("+Trim(__local_CURRENCY) +")","")		&&µo²¼ª÷ÃB
 IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 	_lbInvAmt=getmessage("_deposit_amt") &&­qª÷ª÷ÃB Deposit Amount
-	_lbusername = getmessage("lbl_deposit_datetime") &&¹w­q¤é´Á
-	
-*!*		IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&­qª÷°h´Ú  By Waston 31/08/2023
-*!*			_lbInvAmt=getmessage("_refund_amt") &&°h´Úª÷ÃB Deposit Refund Amount
-*!*		ENDIF 
-	
+	_lbusername = getmessage("lbl_deposit_datetime") &&îAÓ†ÈÕÆÚ•rég
 ENDIF 
 
 *_lbpayamt=getmessage("_paid_amt")+"("+TRIM(__local_currency) +")"		&&¥I´Úª÷ÃB
@@ -23685,7 +23864,6 @@ IF _deposit_pay_print=.T. &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 		_lbdepositNO = getmessage("_deposit_refund") + getmessage("_order_no")
 		_lbusername = ""
 	ENDIF 
-	
 ENDIF 
 
 &&Lihong 2022.08.19 ¤À±b
@@ -23741,7 +23919,7 @@ IF !EMPTY(_aa_sub_id)
 	_inv_split_msg = Iif(cPrint_lange="CN","«È¤H", "Guest")
 	_inv_split_msg = _inv_split_msg + "("+SUBSTR(_aa_sub_id, AT("-",_aa_sub_id)+1) + " / " + TRANSFORM(lnaa_sub_id_count) + ")"
 	_lbsub_invAmt = _inv_split_msg + IIF(cPrint_lange="CN",""," ") + getmessage("_amount", cPrint_lange)
-
+	lninv_remain_deposit_apply = _sub_invAmt
 ENDIF 
 
 Create Cursor inv_print_tmp (r_id Int,same_tableno C(8),Item c(120),qty c(10),amt N(12,2),printtime  c(20),adduser c(20),item_unicode c(200),price N(8,2),srv_per n(6,2),srv_amount n(12,2))
@@ -23831,6 +24009,7 @@ IF VARTYPE(__pay_slip_prt_qrcode_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_fo
 	*{inv_no}{inv_qty}{inv_amt}{inv_paidtime}{inv_belongdate}
 	TEXT TO ssql TEXTMERGE NOSHOW 
 	select invamt,qty=(select SUM(qty) as qty from inv_detail where id=?_inv_id and item_id<>-3 and item_id<>0),belongdate as belongdate_org,paidtime as paidtime_org,
+	deposit_amt=(select amount from deposit with (nolock) where id=inv.deposit_id),  
 	<<IIF(VARTYPE(__pay_slip_prt_qrcode_date_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_date_format), "format(belongdate, ?__pay_slip_prt_qrcode_date_format) as belongdate","belongdate")>>,
 	<<IIF(VARTYPE(__pay_slip_prt_qrcode_datetime_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_datetime_format), "format(paidtime, ?__pay_slip_prt_qrcode_datetime_format) as paidtime","paidtime")>>,
 	begintime as begintime_org, <<IIF(VARTYPE(__pay_slip_prt_qrcode_datetime_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_datetime_format), "format(begintime, ?__pay_slip_prt_qrcode_datetime_format) as begintime","begintime")>>,
@@ -23847,6 +24026,7 @@ IF VARTYPE(__pay_slip_prt_qrcode_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_fo
 	IF RECCOUNT("cun_tmp")=0
 		TEXT TO ssql TEXTMERGE NOSHOW 
 		select invamt,qty=(select SUM(qty) as qty from inv_detail_view where id=?_inv_id and item_id<>-3 and item_id<>0),belongdate as belongdate_org,paidtime as paidtime_org,
+		deposit_amt=(select amount from deposit with (nolock) where id=inv_view.deposit_id),  
 		<<IIF(VARTYPE(__pay_slip_prt_qrcode_date_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_date_format), "format(belongdate, ?__pay_slip_prt_qrcode_date_format) as belongdate","belongdate")>>,
 		<<IIF(VARTYPE(__pay_slip_prt_qrcode_datetime_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_datetime_format), "format(paidtime, ?__pay_slip_prt_qrcode_datetime_format) as paidtime","paidtime")>>,
 		begintime as begintime_org, <<IIF(VARTYPE(__pay_slip_prt_qrcode_datetime_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_datetime_format), "format(begintime, ?__pay_slip_prt_qrcode_datetime_format) as begintime","begintime")>>,
@@ -23872,6 +24052,21 @@ IF VARTYPE(__pay_slip_prt_qrcode_format)#"U" AND !EMPTY(__pay_slip_prt_qrcode_fo
 	IF Year(cun_tmp.belongdate_org)<=2000
 		inv_belongdate=IIF(VARTYPE(__pay_slip_prt_qrcode_date_format)="U" OR EMPTY(__pay_slip_prt_qrcode_date_format), DTOC(cun_tmp.printdate), TRIM(STRCONV(cun_tmp.printdate, 6)))
 	ENDIF 
+*!*		IF SQLEXEC(nhand,"select deposit.amount,inv.invamt,inv.paidtime from deposit with (nolock) right join inv (nolock) on deposit.id=inv.deposit_id where inv.id=?_inv_id","deposit_tmp1")<0
+*!*			Aerror(err)
+*!*			frm_wait.Hide
+*!*			error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+
+*!*			Return -1	
+*!*		ENDIF
+	IF EMPTY(_aa_sub_id)
+		_deposit_apply1 = NVL(cun_tmp.deposit_amt,0)
+		_remaining_balance1 = NVL(cun_tmp.invamt,0) - _deposit_apply1
+		lninv_remain_deposit_apply = IIF(_remaining_balance1<0, 0, _remaining_balance1)
+	ENDIF 
+*!*		USE IN SELECT("deposit_tmp1")
+	inv_remain = IIF(VARTYPE(__pay_slip_prt_qrcode_amt_x100)#"U" and __pay_slip_prt_qrcode_amt_x100, TRANSFORM(FLOOR(lninv_remain_deposit_apply*100)), allt(TRANSFORM(lninv_remain_deposit_apply,"999,999,999.99")) ) 
+
 
 	TRY 
 		lcQRcode = TEXTMERGE(lcQRcode, .F., "{", "}")
@@ -23965,6 +24160,64 @@ If __print_itemlist_in_pay_slip AND _deposit_pay_print=.F.	&&¬O§_¦C¦Lµo²¼¶µ¥Ø &&
 	
 Endif
 
+SELECT 0 
+CREATE CURSOR paylist_tmp_refund (r_id Int,payway c(30),cardno c(50),payamt c(50),tips N(12,2),Changes N(12,2), card_name c(30) )
+
+_remark1_refund = ""
+&&¤@¦¸©Ê­qª÷ÀË¬d¬O§_¦³°h´Ú,¦³ªº¸Ü¥Í¦¨°h´Ú¼Æ¾Ú By Waston 22/09/2023
+IF VARTYPE(_deposit_call_cashier_id) # "U" AND _deposit_call_cashier_id > 0 AND VARTYPE(_deposit_call_cashier_status) # "U" AND INLIST(_deposit_call_cashier_status, 1, 4, 9) 
+		ssql = "Select id,remark1 from deposit with (nolock) where id = (select refund_id from deposit with (nolock) where id = ?_deposit_call_cashier_id  ) "
+*!*		ELSE 
+*!*			ssql = "Select id,remark1 from deposit with (nolock) where deposit_no = (select deposit_no from deposit with (nolock) where id = ?_deposit_call_cashier_id  ) and ISNULL(refund_id,0) > 0 "
+*!*		ENDIF 
+	
+*!*		ssql = "Select remark1 from deposit with (nolock) where id = (select refund_id from deposit with (nolock) where id = ?_deposit_call_cashier_id  ) "
+	IF SQLEXEC(nhand,ssql,"cun_tmp3") < 0
+		Aerror(err)
+		frm_wait.Hide
+		error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+		Return -1
+	ENDIF
+	
+	_remark1_refund = ALLTRIM(cun_tmp3.remark1)
+	_deposit_id_refund = cun_tmp3.id
+	
+	ssql = "Select * from deposit_pay_detail with (nolock) where id = ?_deposit_id_refund "
+	
+*!*		ssql = "Select * from deposit_pay_detail with (nolock) where id = (select refund_id from deposit with (nolock) where id = ?_deposit_call_cashier_id ) "
+	IF SQLEXEC(nhand,ssql,"cun_tmp4") < 0
+		Aerror(err)
+		frm_wait.Hide
+		error_catch(getmessage("_sqlserver_error"),Alltrim(Str(err(1))),Trim(err(2)),Program(),Lineno(1))
+		Return -1
+	ENDIF
+	
+	SELECT cun_tmp4
+	SCAN 
+		_payamt = Alltrim(Str(cun_tmp4.payamt, 12, 2)) 
+	
+		_payway = cun_tmp4.payway
+		
+		Insert Into paylist_tmp_refund (r_id,payway,cardno,payamt,tips,Changes,card_name) Values (nRid_pay,Trim(_payway),Trim(cun_tmp4.cardno), _payamt,cun_tmp4.tips,cun_tmp4.Changes,NVL(cun_tmp4.card_name,""))
+
+	ENDSCAN 
+	IF USED("cun_tmp3")
+		USE IN "cun_tmp3"
+	ENDIF 	
+	
+	IF USED("cun_tmp4")
+		USE IN "cun_tmp4"
+	ENDIF 	
+	
+ENDIF 
+
+_InvAmt_refund = 0 
+Select	paylist_tmp_refund
+Index On r_id Tag pay
+SUM VAL(payamt) TO _InvAmt_refund
+
+_refund_total = RECCOUNT("paylist_tmp_refund")
+
 Select 0
 Create Cursor paylist_tmp (r_id Int,payway c(30),cardno c(50),payamt c(50),tips N(12,2),Changes N(12,2), card_name c(30) )
 Index On r_id Tag pay
@@ -24030,6 +24283,7 @@ Select payway Distinct From paylist_tmp Into Array tmp_s
 If _Tally>1
 
 	_lbpayamt=getmessage("_paid_amt")+"("+Trim(__local_CURRENCY) +")"		&&¥I´Úª÷ÃB
+	
 	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú  By Waston 31/08/2023
 		_lbpayamt=getmessage("_refund_amt")+"("+Trim(__local_CURRENCY) +")"		&&°h´Úª÷ÃB
 	ENDIF 
@@ -24037,9 +24291,7 @@ ELSE
 	IF VARTYPE(_deposit_call_cashier_status) # "U" AND _deposit_call_cashier_status = 2  &&¤@¦¸©Ê­qª÷°h´Ú  By Waston 31/08/2023
 		_lbpayamt=getmessage("_refund_amt") 		&&°h´Úª÷ÃB
 	ENDIF 	
-ENDIF
-
-
+Endif
 
 If Vartype(__pay_slip_print_disc)="L" And __pay_slip_print_disc	AND _deposit_pay_print=.F.	&&¬O§_¦L§é¦©¸ò³]©w &&Lihong 2022.11.18 ¤@¦¸©Ê­qª÷
 
@@ -24199,6 +24451,7 @@ Set Relation To r_id Into paylist_tmp Additive
 Set Relation To r_id Into inv_print_tmp Additive
 Set Relation To r_id Into inv_disc_tmp Additive
 Set Relation To r_id Into inv_dept_tmp Additive
+Set Relation To r_id Into paylist_tmp_refund Additive
 
 _filename=Sys(2015)+ALLTRIM(TRANSFORM(INT(RAND()*10000000)))
 _frx_file=_filename+".frx"
@@ -24210,20 +24463,28 @@ IF  EMPTY(_kisstxid)=.f.  AND File("Report\paylist_kiss.frx")
 		Copy File Report\paylist_kiss.frt To &_frt_file
 
 ELSE
+	
+	IF VARTYPE(_deposit_call_cashier_status) # "U"	&&¤@¦¸©Ê­qª÷ By Waston 12/09/2023
+		
+		IF File("Report\deposit_once.frx")
+			Copy File Report\deposit_once.frx To &_frx_file		&&´_¨î³øªí
+			Copy File Report\deposit_once.frt To &_frt_file
+		ENDIF 
+		
+	ELSE 
 
+		If cPrint_lange="EN" And File("Report\paylist_en.frx")
 
-	If cPrint_lange="EN" And File("Report\paylist_en.frx")
+			Copy File Report\paylist_en.frx To &_frx_file		&&´_¨î³øªí
+			Copy File Report\paylist_en.frt To &_frt_file
 
-		Copy File Report\paylist_en.frx To &_frx_file		&&´_¨î³øªí
-		Copy File Report\paylist_en.frt To &_frt_file
+		Else
 
-	Else
+			Copy File Report\paylist.frx To &_frx_file		&&´_¨î³øªí
+			Copy File Report\paylist.frt To &_frt_file
 
-		Copy File Report\paylist.frx To &_frx_file		&&´_¨î³øªí
-		Copy File Report\paylist.frt To &_frt_file
-
-	Endif
-
+		Endif
+	ENDIF 
 ENDIF
 
 
@@ -24578,7 +24839,7 @@ Select slip_print_tmp
 Go Top
 
 IF VARTYPE(QRcode_file)="U" 
-	QRcode_file ="" 	&&Lihong 2023.06.09
+	QRcode_file)="" &&Lihong 2023.06.09
 ENDIF 
 If Vartype(_preview_slip_html)#"U"	 Or Vartype(_html_fileName)="C" 		&& ¥Í¦¨HTML
 
@@ -38571,3 +38832,208 @@ ENDIF
 RETURN 1
 
 ENDFUNC 
+
+&&Lihong 2023.08.16 ¥\¤Ò¯ù
+FUNCTION memb_to_local(nhand_hq, _mcode, lnid_load)
+LOCAL ssql 
+TEXT TO ssql TEXTMERGE NOSHOW 
+
+	SELECT 
+	      [name_cn]
+	      ,[name_en]
+	      ,[cardno]
+	      ,[cardno2]
+	      ,[id]
+	      ,[active]
+	      ,[type_id]
+	      ,[born_year]
+	      ,[born_month]
+	      ,[born_day]
+	      ,[age]
+	      ,[sex]
+	      ,[tel]
+	      ,[tel1]
+	      ,[email]
+	      ,[idno]
+	      ,[job]
+	      ,[add1]
+	      ,[add2]
+	      ,[add3]
+	      ,[begdate]
+	      ,[enddate]
+	      ,[disc_id]
+	      ,[amount]
+	      ,[rem]
+	      ,[update_time]
+	      ,[times]
+	      ,[company]
+	      ,[payway_id]
+   	      ,[points]
+	      ,fax
+	      ,dept
+	      ,work_addr
+	      ,carno
+	     ,agency
+	     ,nickname 
+
+ENDTEXT
+
+DO CASE
+CASE lnid_load = 0
+	TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+		from member where tel like '%<<lccardno>>%' or cardno like '%<<lccardno>>%' or name_cn like '%<<lccardno>>%' or name_en like '%<<lccardno>>%' or  idno like '%<<lccardno>>%'
+		order by update_time desc
+	ENDTEXT
+
+CASE lnid_load = 1
+	IF  VARTYPE(_mcode)="N"
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and id=?_mcode
+		ENDTEXT
+	ELSE
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and cardno=?_mcode or cardno2=?_mcode
+		ENDTEXT
+	ENDIF
+
+CASE lnid_load = 2
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and cardno like '%<<_mcode>>%' 
+		ENDTEXT
+
+CASE lnid_load = 3
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and name_cn like '%<<_mcode>>%' or name_en like '%<<_mcode>>%'
+		ENDTEXT
+
+CASE lnid_load = 4
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and tel like '%<<_mcode>>%' 
+		ENDTEXT
+
+CASE lnid_load = 5
+		TEXT TO ssql ADDITIVE TEXTMERGE NOSHOW 
+			from member where active=1 and idno like '%<<_mcode>>%' 
+		ENDTEXT
+
+OTHERWISE
+ENDCASE 
+
+USE IN SELECT("member_hq_tmp")
+IF SQLEXEC(nhand_hq,ssql,"member_hq_tmp")<0 &&setup_member_tmp
+	aerror(err)
+	error_catch(getmessage("_sqlserver_error"),ALLTRIM(STR(err(1))),TRIM(err(2)),PROGRAM(),LINENO(1))
+	RETURN
+ENDIF
+
+*!*	IF RECCOUNT("member_hq_tmp")=0
+*!*		USE IN SELECT("member_hq_tmp")
+*!*		fmessagebox("__memb_not_exist") &&·|­û ¥d/¹q¸Ü/¦WºÙ/¨­¥÷ÃÒ¸¹½X ¤£¦s¦b Member card/telephone/name/ID number does not exist
+*!*		RETURN 
+*!*	ENDIF 
+
+*!*	IF RECCOUNT("member_hq_tmp")>1
+*!*		DO FORM form\cloud_memb_choose WITH .F., "member_hq_tmp" TO llok &&.F.: not cloud_memb call
+*!*		IF llok = .F.
+*!*			USE IN SELECT("member_hq_tmp")
+*!*			RETURN .F.
+*!*		ENDIF 
+*!*		_id=member_hq_tmp.id
+*!*		SELECT * FROM member_hq_tmp WHERE id=_id INTO CURSOR member_hq_tmp READWRITE 
+*!*	ELSE
+*!*		_id=member_hq_tmp.id
+*!*	ENDIF 
+
+*
+SELECT member_hq_tmp
+SCAN 
+	_id=member_hq_tmp.id
+
+		TEXT TO ssql noshow
+		DECLARE @updateno as int 
+		SET @updateno = (select ISNULL(MAX(updateno), 0)+1 from member with (nolock) )
+		IF NOT exists(select id from member where id=?_id) 
+			INSERT INTO member ([active] ,[ID], [type_id],[cardno],[name_cn],[name_en],[born_year],[born_month],[born_day],[age],[sex],[tel]
+	           ,[email],[idno],[job],[add1],[add2],[add3],[begdate],[enddate],[disc_id],[amount],[rem],[update_time],
+	           company,payway_id, tel1,points,fax,dept,work_addr,carno,cardno2,updateno,agency,nickname,times) VALUES
+	           (?member_hq_tmp.active,?member_hq_tmp.id,?member_hq_tmp.type_id,?member_hq_tmp.cardno,?member_hq_tmp.name_cn,?member_hq_tmp.name_en,?member_hq_tmp.born_year,?member_hq_tmp.born_month,
+	           ?member_hq_tmp.born_day,?member_hq_tmp.age,?member_hq_tmp.sex,?member_hq_tmp.tel,?member_hq_tmp.email,?member_hq_tmp.idno,?member_hq_tmp.job,?member_hq_tmp.add1
+	           ,?member_hq_tmp.add2,?member_hq_tmp.add3,?member_hq_tmp.begdate,?member_hq_tmp.enddate,?member_hq_tmp.disc_id,?member_hq_tmp.amount,?member_hq_tmp.rem,?member_hq_tmp.update_time,
+	           ?member_hq_tmp.company,?member_hq_tmp.payway_id, ?member_hq_tmp.tel1,?member_hq_tmp.points,?member_hq_tmp.fax,?member_hq_tmp.dept,?member_hq_tmp.work_addr,?member_hq_tmp.carno,
+	           ?member_hq_tmp.cardno2,@updateno,?member_hq_tmp.agency,?member_hq_tmp.nickname,?member_hq_tmp.times)
+	        else  
+			UPDATE [member]
+			   SET [active] = ?member_hq_tmp.active
+			      ,[type_id] =?member_hq_tmp.type_id
+			      ,[cardno] = ?member_hq_tmp.cardno
+			      ,[name_cn] = ?member_hq_tmp.name_cn
+			      ,[name_en] = ?member_hq_tmp.name_en
+			      ,[born_year] = ?member_hq_tmp.born_year
+			      ,[born_month] =?member_hq_tmp.born_month
+			      ,[born_day] = ?member_hq_tmp.born_day
+			      ,[age] = ?member_hq_tmp.age
+			      ,[sex] = ?member_hq_tmp.sex
+			      ,[tel] = ?member_hq_tmp.tel
+			      ,[tel1] = ?member_hq_tmp.tel1
+			      ,[email] = ?member_hq_tmp.email
+			      ,[idno] = ?member_hq_tmp.idno
+			      ,[job] = ?member_hq_tmp.job
+			      ,[add1] = ?member_hq_tmp.add1
+			      ,[add2] = ?member_hq_tmp.add2
+			      ,[add3] = ?member_hq_tmp.add3
+			      ,[begdate] = ?member_hq_tmp.begdate
+			      ,[enddate] = ?member_hq_tmp.enddate
+			      ,[disc_id] = ?member_hq_tmp.disc_id
+			      ,[rem] =?member_hq_tmp.rem 
+			      ,[update_time]=?member_hq_tmp.update_time
+			      ,company=?member_hq_tmp.company
+			      ,payway_id=?member_hq_tmp.payway_id
+			      ,points=?member_hq_tmp.points
+			      ,fax=?member_hq_tmp.fax
+			      ,dept=?member_hq_tmp.dept
+			      ,work_addr=?member_hq_tmp.work_addr
+			      ,carno=?member_hq_tmp.carno
+			      ,cardno2=?member_hq_tmp.cardno2
+			      ,updateno=@updateno
+			      ,agency=?member_hq_tmp.agency
+			      ,nickname=?member_hq_tmp.nickname
+			      ,times=?member_hq_tmp.times
+
+			 WHERE id=?_id
+		
+		ENDTEXT
+		ssql=ssql+CHR(10)+"update updateno set max_updateno=max_updateno+1 where table_name='member' "
+		ssql=ssql+CHR(10)+"update pre_tran set 	updateno=updateno+1 where tablename='member' "
+
+		IF SQLEXEC(nhand, ssql)<0
+			*aerror(err)
+			*error_catch(getmessage("_sqlserver_error"),ALLTRIM(STR(err(1))),TRIM(err(2)),PROGRAM(),LINENO(1))
+			*RETURN
+		ENDIF
+ENDSCAN 
+*
+
+USE IN SELECT("member_hq_tmp")
+
+ENDFUNC 
+
+
+FUNCTION encrypt_card_no
+	LPARAMETERS lCard_no_tmp
+*********************************
+	LOCAL lcCard_no, c
+	lcCard_no = ALLTRIM(lCard_no_tmp)
+	
+	&& 
+	IF AT("*", lcCard_no) > 0 OR AT("X", lcCard_no) > 0
+		RETURN lcCard_no
+	ELSE 
+		IF LEN(lcCard_no) > 4
+			c = SUBSTR(lcCard_no, LEN(lcCard_no) - 4 + 1, 4)	
+			RETURN ALLTRIM(PADL(c, LEN(lcCard_no), "*"))
+		ELSE 
+			RETURN lcCard_no
+		ENDIF 
+	ENDIF 		
+ENDFUNC
+
